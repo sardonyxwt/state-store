@@ -1,7 +1,7 @@
 {
   "name": "@sclib/application-state-store",
   "version": "0.0.1",
-  "description": "",
+  "description": "Application state store",
   "keywords": [
     "sclib",
     "application-state-store"
@@ -26,7 +26,8 @@
   "scripts": {
     "build": "cross-env NODE_ENV='production' webpack -p",
     "test": "cross-env-shell webpack && jest",
-    "lint": "tslint -p . -c tslint.json --fix -t verbose"
+    "lint": "tslint -p . -c tslint.json --fix -t verbose",
+    "publish": "cross-env-shell npm run build && npm publish"
   },
   "jest": {
     "moduleFileExtensions": [
