@@ -22,5 +22,5 @@ export declare class Store {
     static unsubscribe(listenerId: string): void;
     static getState(): any;
 }
-declare const _default: any;
-export default _default;
+export declare const ROOT_SCOPE: string;
+export default Store;

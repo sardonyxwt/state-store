@@ -36,7 +36,8 @@ export class Store {
       const action = this.actions[actionId];
       const scopeId = action.scopeId;
       const oldScope = this.scopes[scopeId];
-      const resolvedCallback = (newScope: any) => {
+
+      action.func(oldScope, props, (newScope) => {
         this.scopes[scopeId] = newScope;
         for (let listenerIndex in this.listeners) {
           let listener = this.listeners[listenerIndex];
@@ -44,8 +45,7 @@ export class Store {
             listener.func({ newScope, oldScope });
           }
         }
-      };
-      action.func(oldScope, props, resolvedCallback);
+      });
     } else throw new Error(`This action not exists ${actionId}`);
   }
 
