@@ -1,6 +1,6 @@
 {
   "name": "@sclib/state-store",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Application state store",
   "keywords": [
     "sclib",
