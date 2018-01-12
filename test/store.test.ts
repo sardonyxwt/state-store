@@ -5,6 +5,7 @@ describe('Store', () => {
 
     let scopeId: string;
     let actionId: string;
+    let listenerId: string;
     const testValue = 1000;
 
     it('registerScope', () => {
@@ -18,7 +19,7 @@ describe('Store', () => {
     });
 
     it('subscribe', () => {
-        Store.subscribe(scopeId, ({ newScope }) => {
+        listenerId = Store.subscribe(scopeId, ({ newScope }) => {
             expect(newScope).toEqual(testValue);
         });
     });
@@ -27,6 +28,10 @@ describe('Store', () => {
         Store.dispatch(actionId, testValue).then(newScope => {
             expect(newScope).toEqual(testValue);
         });
+    });
+
+    it('unsubscribe', () => {
+      Store.unsubscribe(listenerId);
     });
 
     it('getScope', () => {
