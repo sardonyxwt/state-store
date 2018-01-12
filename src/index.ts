@@ -1,5 +1,14 @@
 import { uniqueId, deepFreeze, keys, values } from './utils';
-import { Action, ActionType, Listener, ListenerType } from './types';
+
+type ListenerEventType = { newScope: any, oldScope: any, actionId: string };
+type ListenerType = (event: ListenerEventType) => void;
+type ActionType = (
+  scope: any,
+  props: any,
+  resolved: (newScope: any) => void
+) => void;
+type Action = { scopeId: string, func: ActionType };
+type Listener = { scopeId: string, func: ListenerType };
 
 const scopes: { [id: string]: any } = {};
 const actions: { [id: string]: Action } = {};
@@ -7,7 +16,7 @@ const listeners: { [id: string]: Listener } = {};
 
 export const ROOT_SCOPE = registerScope('rootScope');
 
-export function registerScope(name: string = 'scope', initScope: any = {}) {
+function registerScope(name: string = 'scope', initScope: any = {}) {
   const scopeId = uniqueId(name);
 
   if (scopeId in scopes) {
@@ -18,7 +27,7 @@ export function registerScope(name: string = 'scope', initScope: any = {}) {
   return scopeId;
 }
 
-export function registerAction(scopeId: string, action: ActionType) {
+function registerAction(scopeId: string, action: ActionType) {
   const isScopeExists = scopeId in scopes;
 
   if (!isScopeExists) {
@@ -30,7 +39,7 @@ export function registerAction(scopeId: string, action: ActionType) {
   return actionId;
 }
 
-export function dispatch(actionId: string, props: any) {
+function dispatch(actionId: string, props: any) {
   const action = actions[actionId];
 
   if (!action) {
@@ -52,7 +61,7 @@ export function dispatch(actionId: string, props: any) {
   });
 }
 
-export function subscribe(scopeId: string, listener: ListenerType) {
+function subscribe(scopeId: string, listener: ListenerType) {
   const scope = scopes[scopeId];
 
   if (!scope) {
@@ -66,14 +75,24 @@ export function subscribe(scopeId: string, listener: ListenerType) {
   return listenerId;
 }
 
-export function unsubscribe(listenerId: string) {
+function unsubscribe(listenerId: string) {
   delete listeners[listenerId];
 }
 
-export function getScope(scopeId: string) {
+function getScope(scopeId: string) {
   return scopes[scopeId];
 }
 
-export function getState() {
+function getState() {
   return { ...scopes };
+}
+
+export default {
+  registerScope,
+  registerAction,
+  dispatch,
+  subscribe,
+  unsubscribe,
+  getScope,
+  getState
 }

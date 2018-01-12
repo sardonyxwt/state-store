@@ -1,7 +1,7 @@
 {
   "name": "@sardonyxwt/state-store",
-  "version": "0.0.2",
-  "description": "Application state store",
+  "version": "1.0.0",
+  "description": "State store",
   "keywords": [
     "sclib",
     "application-state-store"
@@ -38,7 +38,7 @@
       "\\.(ts|tsx)$": "<rootDir>/node_modules/ts-jest/preprocessor.js"
     },
     "mapCoverage": true,
-    "testRegex": "/test/.*\\.(test|spec)\\.(ts|js)$"
+    "testRegex": "/(test|src)/.*\\.(test|spec)\\.(ts|js)$"
   },
   "dependencies": {},
   "devDependencies": {

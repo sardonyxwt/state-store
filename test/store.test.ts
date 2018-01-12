@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import * as Store from '../src';
+import Store, {ROOT_SCOPE} from '../src';
 
 describe('Store', () => {
 
@@ -42,7 +42,7 @@ describe('Store', () => {
     it('getState', () => {
         const state = Store.getState();
         expect(state).toEqual({
-            [Store.ROOT_SCOPE]: {},
+            [ROOT_SCOPE]: {},
             [scopeId]: testValue
         });
     });
