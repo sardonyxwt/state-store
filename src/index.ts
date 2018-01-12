@@ -1,73 +1,79 @@
-import { generateId } from './utils';
+import { uniqueId, deepFreeze, keys, values } from './utils';
+import { Action, ActionType, Listener, ListenerType } from './types';
 
-export type ListenerType = (event: { newScope: any, oldScope: any }) => void;
-export type ActionType = (
-  scope: any,
-  props: any,
-  resolved: (newScope: any) => void
-) => void;
-export type Action = { scopeId: string, func: ActionType };
-export type Listener = { actionId: string, func: ListenerType };
+const scopes: { [id: string]: any } = {};
+const actions: { [id: string]: Action } = {};
+const listeners: { [id: string]: Listener } = {};
 
-export class Store {
+export const ROOT_SCOPE = registerScope('rootScope');
 
-  private static scopes: { [id: string]: any } = {};
-  private static actions: { [id: string]: Action } = {};
-  private static listeners: { [id: string]: Listener } = {};
+export function registerScope(name: string = 'scope', initScope: any = {}) {
+  const scopeId = uniqueId(name);
 
-  static scope(scopeId: string, initScope: any = {}): string {
-    if (scopeId in this.scopes) {
-      throw new Error(`This scope already exists ${scopeId}`);
-    }
-    this.scopes[scopeId] = initScope;
-    return scopeId;
+  if (scopeId in scopes) {
+    throw new Error(`This scope already exists ${scopeId}`);
   }
 
-  static action(scopeId: string, action: ActionType): string {
-    if (scopeId in Store.scopes) {
-      const actionId = generateId('store_action');
-      Store.actions[actionId] = { scopeId, func: action };
-      return actionId;
-    } else throw new Error(`This scope not exists ${scopeId}`);
-  }
-
-  static dispatch(actionId: string, props: any) {
-    if (actionId in this.actions) {
-      const action = this.actions[actionId];
-      const scopeId = action.scopeId;
-      const oldScope = this.scopes[scopeId];
-
-      action.func(oldScope, props, (newScope) => {
-        this.scopes[scopeId] = newScope;
-        for (let listenerIndex in this.listeners) {
-          let listener = this.listeners[listenerIndex];
-          if (listener.actionId === actionId) {
-            listener.func({ newScope, oldScope });
-          }
-        }
-      });
-    } else throw new Error(`This action not exists ${actionId}`);
-  }
-
-  static subscribe(actionId: string, listener: ListenerType): string {
-    if (actionId in this.actions) {
-      const newListener = { actionId, func: listener };
-      const listenerId = generateId('store_listener');
-      this.listeners[listenerId] = newListener;
-      return listenerId;
-    } else throw new Error(`This action not exists ${actionId}`);
-  }
-
-  static unsubscribe(listenerId: string) {
-    delete this.listeners[listenerId];
-  }
-
-  static getState(): any {
-    return this.scopes;
-  }
-
+  scopes[scopeId] = deepFreeze(initScope);
+  return scopeId;
 }
 
-export const ROOT_SCOPE = Store.scope('rootScope');
+export function registerAction(scopeId: string, action: ActionType) {
+  const isScopeExists = scopeId in scopes;
 
-export default Store;
+  if (!isScopeExists) {
+    throw new Error(`This scope not exists ${scopeId}`);
+  }
+
+  const actionId = uniqueId('store_action');
+  actions[actionId] = { scopeId, func: action };
+  return actionId;
+}
+
+export function dispatch(actionId: string, props: any) {
+  const action = actions[actionId];
+
+  if (!action) {
+    throw new Error(`This action not exists ${actionId}`);
+  }
+
+  const scopeId = action.scopeId;
+  const oldScope = scopes[scopeId];
+
+  return new Promise((resolve, reject) => {
+    action.func(oldScope, props, resolve);
+  }).then(newScope => {
+    deepFreeze(newScope)
+    values(listeners)
+      .filter(it => it.scopeId === scopeId)
+      .forEach(it => it.func({ oldScope, newScope, actionId }));
+    scopes[scopeId] = newScope;
+    return newScope;
+  });
+}
+
+export function subscribe(scopeId: string, listener: ListenerType) {
+  const scope = scopes[scopeId];
+
+  if (!scope) {
+    throw new Error(`This action not exists ${scopeId}`);
+  }
+
+  const newListener = { scopeId, func: listener };
+  const listenerId = uniqueId('listener');
+
+  listeners[listenerId] = newListener;
+  return listenerId;
+}
+
+export function unsubscribe(listenerId: string) {
+  delete listeners[listenerId];
+}
+
+export function getScope(scopeId: string) {
+  return scopes[scopeId];
+}
+
+export function getState() {
+  return { ...scopes };
+}

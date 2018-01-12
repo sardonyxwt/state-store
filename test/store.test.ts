@@ -1,25 +1,45 @@
 /// <reference types="jest" />
-import { Store, ROOT_SCOPE } from '../src';
+import * as Store from '../src';
 
 describe('Store', () => {
 
+    let scopeId: string;
     let actionId: string;
     const testValue = 1000;
 
-    it('init', () => {
-        actionId = Store.action(ROOT_SCOPE, (scope, props, resolved) => {
+    it('registerScope', () => {
+        scopeId = Store.registerScope('testScope');
+    });
+
+    it('registerAction', () => {
+        actionId = Store.registerAction(scopeId, (scope, props, resolved) => {
             resolved(props);
         });
     });
 
     it('subscribe', () => {
-        Store.subscribe(actionId, ({ newScope }) => {
+        Store.subscribe(scopeId, ({ newScope }) => {
             expect(newScope).toEqual(testValue);
         });
     });
 
     it('dispatch', () => {
-        Store.dispatch(actionId, testValue);
+        Store.dispatch(actionId, testValue).then(newScope => {
+            expect(newScope).toEqual(testValue);
+        });
+    });
+
+    it('getScope', () => {
+        const scope = Store.getScope(scopeId);
+        expect(scope).toEqual(testValue);
+    });
+
+    it('getState', () => {
+        const state = Store.getState();
+        expect(state).toEqual({
+            [Store.ROOT_SCOPE]: {},
+            [scopeId]: testValue
+        });
     });
 
 });

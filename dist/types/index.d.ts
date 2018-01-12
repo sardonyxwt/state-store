@@ -1,26 +1,11 @@
-export declare type ListenerType = (event: {
-    newScope: any;
-    oldScope: any;
-}) => void;
-export declare type ActionType = (scope: any, props: any, resolved: (newScope: any) => void) => void;
-export declare type Action = {
-    scopeId: string;
-    func: ActionType;
-};
-export declare type Listener = {
-    actionId: string;
-    func: ListenerType;
-};
-export declare class Store {
-    private static scopes;
-    private static actions;
-    private static listeners;
-    static scope(scopeId: string, initScope?: any): string;
-    static action(scopeId: string, action: ActionType): string;
-    static dispatch(actionId: string, props: any): void;
-    static subscribe(actionId: string, listener: ListenerType): string;
-    static unsubscribe(listenerId: string): void;
-    static getState(): any;
-}
+import { ActionType, ListenerType } from './types';
 export declare const ROOT_SCOPE: string;
-export default Store;
+export declare function registerScope(name?: string, initScope?: any): string;
+export declare function registerAction(scopeId: string, action: ActionType): string;
+export declare function dispatch(actionId: string, props: any): Promise<{}>;
+export declare function subscribe(scopeId: string, listener: ListenerType): string;
+export declare function unsubscribe(listenerId: string): void;
+export declare function getScope(scopeId: string): any;
+export declare function getState(): {
+    [x: string]: any;
+};
