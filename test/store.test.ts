@@ -13,15 +13,15 @@ describe('Store', () => {
     });
 
     it('registerAction', () => {
-        actionId = Store.registerAction(scopeId, (scope, props, resolved) => {
+        actionId = Store.registerAction((scope, props, resolved) => {
             resolved(props);
-        });
+        }, scopeId);
     });
 
     it('subscribe', () => {
-        listenerId = Store.subscribe(scopeId, ({ newScope }) => {
+        listenerId = Store.subscribe(({ newScope }) => {
             expect(newScope).toEqual(testValue);
-        });
+        }, scopeId);
     });
 
     it('dispatch', () => {

@@ -27,7 +27,7 @@ function registerScope(name: string = 'scope', initScope: any = {}) {
   return scopeId;
 }
 
-function registerAction(scopeId: string, action: ActionType) {
+function registerAction(action: ActionType, scopeId = ROOT_SCOPE) {
   const isScopeExists = scopeId in scopes;
 
   if (!isScopeExists) {
@@ -61,7 +61,7 @@ function dispatch(actionId: string, props: any) {
   });
 }
 
-function subscribe(scopeId: string, listener: ListenerType) {
+function subscribe(listener: ListenerType, scopeId = ROOT_SCOPE) {
   const scope = scopes[scopeId];
 
   if (!scope) {
@@ -79,7 +79,7 @@ function unsubscribe(listenerId: string) {
   delete listeners[listenerId];
 }
 
-function getScope(scopeId: string) {
+function getScope(scopeId = ROOT_SCOPE) {
   return scopes[scopeId];
 }
 
