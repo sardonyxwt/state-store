@@ -1,10 +1,11 @@
 {
   "name": "@sardonyxwt/state-store",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "State store",
   "keywords": [
     "sclib",
-    "application-state-store"
+    "state",
+    "store"
   ],
   "license": "MIT",
   "author": "sardonyx.wt@gmail.com",
@@ -17,11 +18,11 @@
     "CHANGELOG.md",
     "dist/"
   ],
-  "main": "dist/application-state-store.js",
+  "main": "dist/state-store.js",
   "typings": "dist/types/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sardonyxwt/application-state-store.git"
+    "url": "https://github.com/sardonyxwt/state-store.git"
   },
   "scripts": {
     "build": "cross-env NODE_ENV='production' webpack -p",
