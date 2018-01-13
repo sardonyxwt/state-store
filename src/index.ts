@@ -1,12 +1,8 @@
-import { uniqueId, deepFreeze, keys, values } from './utils';
+import {uniqueId, deepFreeze, values} from './utils';
 
-type ListenerEventType = { newScope: any, oldScope: any, actionId: string };
+type ListenerEventType = { newScope, oldScope, actionId: string };
 type ListenerType = (event: ListenerEventType) => void;
-type ActionType = (
-  scope: any,
-  props: any,
-  resolved: (newScope: any) => void
-) => void;
+type ActionType = (scope, props, resolved: (newScope) => void, rejected: (error) => void) => void;
 type Action = { scopeId: string, func: ActionType };
 type Listener = { scopeId: string, func: ListenerType };
 
@@ -16,7 +12,7 @@ const listeners: { [id: string]: Listener } = {};
 
 export const ROOT_SCOPE = registerScope('rootScope');
 
-function registerScope(name: string = 'scope', initScope: any = {}) {
+function registerScope(name = 'scope', initScope = {}) {
   const scopeId = uniqueId(name);
 
   if (scopeId in scopes) {
@@ -35,11 +31,11 @@ function registerAction(action: ActionType, scopeId = ROOT_SCOPE) {
   }
 
   const actionId = uniqueId('store_action');
-  actions[actionId] = { scopeId, func: action };
+  actions[actionId] = {scopeId, func: action};
   return actionId;
 }
 
-function dispatch(actionId: string, props: any) {
+function dispatch(actionId: string, props) {
   const action = actions[actionId];
 
   if (!action) {
@@ -50,12 +46,12 @@ function dispatch(actionId: string, props: any) {
   const oldScope = scopes[scopeId];
 
   return new Promise((resolve, reject) => {
-    action.func(oldScope, props, resolve);
+    action.func(oldScope, props, resolve, reject);
   }).then(newScope => {
-    deepFreeze(newScope)
+    deepFreeze(newScope);
     values(listeners)
       .filter(it => it.scopeId === scopeId)
-      .forEach(it => it.func({ oldScope, newScope, actionId }));
+      .forEach(it => it.func({oldScope, newScope, actionId}));
     scopes[scopeId] = newScope;
     return newScope;
   });
@@ -68,7 +64,7 @@ function subscribe(listener: ListenerType, scopeId = ROOT_SCOPE) {
     throw new Error(`This action not exists ${scopeId}`);
   }
 
-  const newListener = { scopeId, func: listener };
+  const newListener = {scopeId, func: listener};
   const listenerId = uniqueId('listener');
 
   listeners[listenerId] = newListener;
@@ -84,7 +80,7 @@ function getScope(scopeId = ROOT_SCOPE) {
 }
 
 function getState() {
-  return { ...scopes };
+  return {...scopes};
 }
 
 export default {
@@ -95,4 +91,4 @@ export default {
   unsubscribe,
   getScope,
   getState
-}
+};

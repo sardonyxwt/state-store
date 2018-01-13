@@ -6,24 +6,20 @@ export function uniqueId(name: string = 'default') {
   return `${name}${index ? index : ''}`;
 }
 
+export function keys(object: Object) {
+  return Object.getOwnPropertyNames(object);
+}
+
+export function values<T>(obj: { [key: string]: T }): T[] {
+  return keys(obj).map(key => obj[key]);
+}
+
 export function deepFreeze<T>(obj: T) {
-  keys(obj).forEach(function(key) {
-    var prop = obj[key];
+  keys(obj).forEach(function (key) {
+    let prop = obj[key];
     if (typeof prop == 'object' && prop !== null) {
       deepFreeze(prop);
     }
   });
   return Object.freeze(obj);
-}
-
-export function keys(object: Object) {
-  return Object.getOwnPropertyNames(object);
-}
-
-export function values<T>(object: {[key: string]: T}) {
-  const values: T[] = [];
-  for (let key in object) {
-    values.push(object[key]);
-  }
-  return values;
 }
