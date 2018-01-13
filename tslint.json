@@ -1,17 +1,33 @@
 {
   "rules": {
-    "no-console": [true, "log"],
+    "no-console": [
+      true,
+      "log"
+    ],
     "no-duplicate-imports": true,
     "no-duplicate-variable": true,
     "no-var-keyword": true,
-    "semicolon": [true],
-    "variable-name": [true, "ban-keywords"]
+    "semicolon": [
+      true
+    ],
+    "variable-name": [
+      true,
+      "ban-keywords"
+    ]
   },
   "jsRules": {
-    "no-console": [true, "log"],
+    "no-console": [
+      true,
+      "log"
+    ],
     "no-duplicate-imports": true,
     "no-duplicate-variable": true,
-    "semicolon": [true],
-    "variable-name": [true, "ban-keywords"]
+    "semicolon": [
+      true
+    ],
+    "variable-name": [
+      true,
+      "ban-keywords"
+    ]
   }
 }
