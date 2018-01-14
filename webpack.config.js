@@ -19,7 +19,7 @@ module.exports = {
   entry: './src/index.ts',
   devtool: 'source-map',
   output: {
-    filename: "./dist/application-state-store.js",
+    filename: "./dist/state-store.min.js",
     libraryTarget: 'umd',
     umdNamedDefine: true
   },

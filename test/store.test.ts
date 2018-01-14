@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import Store, {ROOT_SCOPE} from '../src';
+import Store, {ROOT_SCOPE} from '../';
 
 describe('Store', () => {
 
