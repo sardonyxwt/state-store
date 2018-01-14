@@ -35,7 +35,7 @@ function registerAction(action: ActionType, scopeId = ROOT_SCOPE) {
   return actionId;
 }
 
-function dispatch(actionId: string, props) {
+function dispatch(actionId: string, props?) {
   const action = actions[actionId];
 
   if (!action) {
