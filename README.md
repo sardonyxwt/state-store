@@ -70,4 +70,4 @@ console.log(Store.getState());
 
 ### License
 
-React is [MIT licensed](./LICENSE).
+state-store is [MIT licensed](./LICENSE).
