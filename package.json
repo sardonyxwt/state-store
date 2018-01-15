@@ -1,6 +1,6 @@
 {
   "name": "@sardonyxwt/state-store",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "State store",
   "keywords": [
     "sclib",
@@ -16,10 +16,11 @@
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
+    "src/",
     "dist/"
   ],
   "main": "dist/state-store.min.js",
-  "typings": "dist/types/index.d.ts",
+  "typings": "src/index.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/sardonyxwt/state-store.git"
