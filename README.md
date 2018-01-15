@@ -23,8 +23,10 @@ That's it!
 ```js
 import Store, {ROOT_SCOPE} from '@sardonyxwt/state-store';
 
+//Registers a new scope
 const COUNTER_SCOPE = Store.registerScope('counterScope', 0);
 
+//Registers a new action in COUNTER_SCOPE
 const INCREMENT_ACTION = Store.registerAction(
   (scope, props, resolved) => resolved(scope + 1), 
   COUNTER_SCOPE
@@ -45,6 +47,7 @@ const SET_COUNTER_ACTION = Store.registerAction(
   COUNTER_SCOPE
 );
 
+//You can use subscribe() to update the UI in response to state changes.
 let listenerId = Store.subscribe(
   ({oldScope, newScope, actionId}) => { 
     console.log(oldScope, newScope, actionId)
@@ -52,6 +55,7 @@ let listenerId = Store.subscribe(
   COUNTER_SCOPE
 );
 
+// The only way to mutate the internal scope is to dispatch an action.
 Store.dispatch(INCREMENT_ACTION);
 Store.dispatch(DECREMENT_ACTION);
 
