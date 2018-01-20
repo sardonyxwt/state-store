@@ -1,14 +1,11 @@
-import {uniqueId, deepFreeze, values} from './utils';
+import {uniqueId, deepFreeze} from './utils';
 
 type ListenerEventType = { newScope, oldScope, actionId: string };
-type ListenerType = (event: ListenerEventType) => void;
-type ActionType = (scope, props, resolve: (newScope) => void, reject: (error) => void) => void;
-type Action = { scopeId: string, func: ActionType };
-type Listener = { scopeId: string, func: ListenerType };
+type Listener = (event: ListenerEventType) => void;
+type Action = (scope, props, resolve: (newScope) => void, reject: (error) => void) => void;
+type Scope = { scope, actions: Map<string, Action>, listeners: Map<string, Listener> };
 
-const scopes: { [scopeId: string]: any } = {};
-const actions: { [actionId: string]: Action } = {};
-const listeners: { [listenerId: string]: Listener } = {};
+const scopes: Map<string, Scope> = new Map();
 
 /**
  * This scope id use by default.
@@ -25,27 +22,30 @@ export const ROOT_SCOPE = registerScope('rootScope');
  */
 function registerScope(name = 'scope', initScopeState = {}) {
   const scopeId = uniqueId(name);
-  scopes[scopeId] = deepFreeze(initScopeState);
+
+  scopes.set(scopeId, {
+    actions: new Map(), listeners: new Map(), scope: deepFreeze(initScopeState)
+  });
   return scopeId;
 }
 
 /**
  * Registers a new action in scope and return action id.
- * @param {ActionType} action The action that changes the scope
+ * @param {Action} action The action that changes the scope
  * when it is called.
  * @param {string} scopeId Id of the scope to register the action.
  * By default use ROOT_SCOPE id.
  * @return {string} Id from registered action.
  */
-function registerAction(action: ActionType, scopeId = ROOT_SCOPE) {
-  const scope = scopes[scopeId];
+function registerAction(action: Action, scopeId = ROOT_SCOPE) {
+  const scope = scopes.get(scopeId);
 
   if (!scope) {
     throw new Error(`Scope not exists ${scopeId}`);
   }
 
   const actionId = uniqueId('store_action');
-  actions[actionId] = {scopeId, func: action};
+  scope.actions.set(actionId, action);
   return actionId;
 }
 
@@ -59,23 +59,25 @@ function registerAction(action: ActionType, scopeId = ROOT_SCOPE) {
  * or catch errors
  */
 function dispatch(actionId: string, props?) {
-  const action = actions[actionId];
+  const scope = Array.from(scopes.values()).find(
+    scope => scope.actions.has(actionId)
+  );
 
-  if (!action) {
+  if (!scope) {
     throw new Error(`This action not exists ${actionId}`);
   }
 
-  const scopeId = action.scopeId;
-  const oldScope = scopes[scopeId];
+  const action: Action = scope.actions.get(actionId);
+  const oldScope = scope.scope;
 
   return new Promise((resolve, reject) => {
-    action.func(oldScope, props, resolve, reject);
+    action(oldScope, props, resolve, reject);
   }).then(newScope => {
     deepFreeze(newScope);
-    values(listeners)
-      .filter(it => it.scopeId === scopeId)
-      .forEach(it => it.func({oldScope, newScope, actionId}));
-    scopes[scopeId] = newScope;
+    scope.listeners.forEach(
+      it => it({oldScope, newScope, actionId})
+    );
+    scope.scope = newScope;
     return newScope;
   });
 }
@@ -83,31 +85,29 @@ function dispatch(actionId: string, props?) {
 /**
  * Adds a scope change listener.
  * It will be called any time an action is dispatched.
- * @param {ListenerType} listener A callback to be invoked on every dispatch.
+ * @param {Listener} listener A callback to be invoked on every dispatch.
  * @param {string} scopeId Id of the scope to subscribe the listener.
  * By default use ROOT_SCOPE id.
  * @return {string} A listener id to remove this change listener later.
  */
-function subscribe(listener: ListenerType, scopeId = ROOT_SCOPE) {
-  const scope = scopes[scopeId];
+function subscribe(listener: Listener, scopeId = ROOT_SCOPE) {
+  const scope = scopes.get(scopeId);
 
   if (!scope) {
-    throw new Error(`This action not exists ${scopeId}`);
+    throw new Error(`This scope not exists ${scopeId}`);
   }
 
-  const newListener = {scopeId, func: listener};
   const listenerId = uniqueId('listener');
-
-  listeners[listenerId] = newListener;
+  scope.listeners.set(listenerId, listener);
   return listenerId;
 }
 
 /**
  * Removes a scope change listener.
- * @param {string} listenerId Id of the listener to delete.
+ * @param {string} id Id of the listener to delete.
  */
-function unsubscribe(listenerId: string) {
-  delete listeners[listenerId];
+function unsubscribe(id: string) {
+  scopes.forEach(scope => scope.listeners.delete(id));
 }
 
 /**
@@ -117,7 +117,13 @@ function unsubscribe(listenerId: string) {
  * @return {any} Scope state
  */
 function getScope(scopeId = ROOT_SCOPE) {
-  return scopes[scopeId];
+  const scope = scopes.get(scopeId);
+
+  if (!scope) {
+    throw new Error(`Scope not exists ${scopeId}`);
+  }
+
+  return scope.scope;
 }
 
 /**
@@ -125,7 +131,11 @@ function getScope(scopeId = ROOT_SCOPE) {
  * @return {{string: any}} Scope states
  */
 function getState() {
-  return {...scopes};
+  const state = {};
+  Array.from(scopes.entries()).forEach(
+    ([key, scope]) => state[key] = scope.scope
+  );
+  return state;
 }
 
 export default {
