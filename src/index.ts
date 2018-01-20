@@ -1,7 +1,6 @@
 import {uniqueId, deepFreeze} from './utils';
 
-type ListenerEventType = { newScope, oldScope, actionId: string };
-type Listener = (event: ListenerEventType) => void;
+type Listener = (event: { newScope, oldScope, actionId: string }) => void;
 type Action = (scope, props, resolve: (newScope) => void, reject: (error) => void) => void;
 type Scope = { scope, actions: Map<string, Action>, listeners: Map<string, Listener> };
 
@@ -22,7 +21,6 @@ export const ROOT_SCOPE = registerScope('rootScope');
  */
 function registerScope(name = 'scope', initScopeState = {}) {
   const scopeId = uniqueId(name);
-
   scopes.set(scopeId, {
     actions: new Map(), listeners: new Map(), scope: deepFreeze(initScopeState)
   });
@@ -39,12 +37,10 @@ function registerScope(name = 'scope', initScopeState = {}) {
  */
 function registerAction(action: Action, scopeId = ROOT_SCOPE) {
   const scope = scopes.get(scopeId);
-
   if (!scope) {
     throw new Error(`Scope not exists ${scopeId}`);
   }
-
-  const actionId = uniqueId('store_action');
+  const actionId = uniqueId('action');
   scope.actions.set(actionId, action);
   return actionId;
 }
@@ -62,14 +58,11 @@ function dispatch(actionId: string, props?) {
   const scope = Array.from(scopes.values()).find(
     scope => scope.actions.has(actionId)
   );
-
   if (!scope) {
     throw new Error(`This action not exists ${actionId}`);
   }
-
   const action: Action = scope.actions.get(actionId);
   const oldScope = scope.scope;
-
   return new Promise((resolve, reject) => {
     action(oldScope, props, resolve, reject);
   }).then(newScope => {
@@ -92,11 +85,9 @@ function dispatch(actionId: string, props?) {
  */
 function subscribe(listener: Listener, scopeId = ROOT_SCOPE) {
   const scope = scopes.get(scopeId);
-
   if (!scope) {
     throw new Error(`This scope not exists ${scopeId}`);
   }
-
   const listenerId = uniqueId('listener');
   scope.listeners.set(listenerId, listener);
   return listenerId;
@@ -118,11 +109,9 @@ function unsubscribe(id: string) {
  */
 function getScope(scopeId = ROOT_SCOPE) {
   const scope = scopes.get(scopeId);
-
   if (!scope) {
     throw new Error(`Scope not exists ${scopeId}`);
   }
-
   return scope.scope;
 }
 
