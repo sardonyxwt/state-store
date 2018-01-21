@@ -1,13 +1,8 @@
-const webpack = require('webpack');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const plugins = [
   new CleanWebpackPlugin('dist'),
-  new webpack.optimize.UglifyJsPlugin({
-    minimize: true,
-    sourceMap: true
-  }),
   new BundleAnalyzerPlugin({
     openAnalyzer: false,
     analyzerMode: 'static',
