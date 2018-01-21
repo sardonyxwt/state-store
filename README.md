@@ -21,55 +21,56 @@ To specify how the actions transform the scope, you write pure *action* and regi
 That's it!
 
 ```js
-import Store, {ROOT_SCOPE} from '@sardonyxwt/state-store';
+import {createScope} from '@sardonyxwt/state-store';
 
-//Registers a new scope
-const COUNTER_SCOPE = Store.registerScope('counterScope', 0);
+const INCREMENT_ACTION = 'increment';
+const DECREMENT_ACTION = 'decrement';
+const SET_COUNTER_ACTION = 'setCounter';
+
+//Create a new scope
+const counterScope = createScope('counterScope', 0);
 
 //Registers a new action in COUNTER_SCOPE
-const INCREMENT_ACTION = Store.registerAction(
-  (scope, props, resolved) => resolved(scope + 1), 
-  COUNTER_SCOPE
+counterScope.registerAction(
+  INCREMENT_ACTION,
+  (scope, props, resolved) => resolved(scope + 1)
 );
 
-const DECREMENT_ACTION = Store.registerAction(
-  (scope, props, resolved) => resolved(scope - 1), 
-  COUNTER_SCOPE
+counterScope.registerAction(
+  DECREMENT_ACTION,
+  (scope, props, resolved) => resolved(scope - 1),
 );
 
-const SET_COUNTER_ACTION = Store.registerAction(
+counterScope.registerAction(
+  SET_COUNTER_ACTION,
   (scope, props, resolved, rejected) => {
     if(typeof props !== 'number') {
       rejected(new Error('Props is not number'));
     }
     resolved(props);
-  },
-  COUNTER_SCOPE
+  }
 );
 
 //You can use subscribe() to update the UI in response to state changes.
-let listenerId = Store.subscribe(
-  ({oldScope, newScope, actionId}) => { 
+let listenerId = counterScope.subscribe(
+  ({oldScope, newScope, actionId}) => {
     console.log(oldScope, newScope, actionId)
-  }, 
-  COUNTER_SCOPE
+  }
 );
 
-// The only way to mutate the internal scope is to dispatch an action.
-Store.dispatch(INCREMENT_ACTION);
-Store.dispatch(DECREMENT_ACTION);
+// The only way to mutate the internal state in scope is to dispatch an action.
+counterScope.dispatch(INCREMENT_ACTION);
+counterScope.dispatch(DECREMENT_ACTION);
 
-Store.dispatch(SET_COUNTER_ACTION, 1000)
+counterScope.dispatch(SET_COUNTER_ACTION, 1000)
   .then(newScope => console.log(newScope));
 
-Store.dispatch(SET_COUNTER_ACTION, "invalid props")
+counterScope.dispatch(SET_COUNTER_ACTION, "invalid props")
   .catch(err => console.log(err));
 
-Store.unsubscribe(listenerId);
+counterScope.unsubscribe(listenerId);
 
-console.log(Store.getScope(COUNTER_SCOPE));
-console.log(Store.getScope(ROOT_SCOPE));
-console.log(Store.getState());
+console.log(counterScope.getState());
 ```
 
 ### License

@@ -1,49 +1,48 @@
 /// <reference types="jest" />
-import Store, {ROOT_SCOPE} from '../src';
+import {createScope, getState, Scope, ROOT_SCOPE} from '../src';
 
 describe('Store', () => {
 
-  let scopeId: string;
-  let actionId: string;
-  let listenerId: string;
-  const testValue = 1000;
+  let scope: Scope;
+  let listenerId;
+  const ACTION_NAME = 'action';
+  const TEST_VALUE = 1000;
 
-  it('registerScope', () => {
-    scopeId = Store.registerScope('testScope');
+  it('createScope', () => {
+    scope = createScope();
   });
 
   it('registerAction', () => {
-    actionId = Store.registerAction((scope, props, resolved) => {
+    scope.registerAction(ACTION_NAME, (scope, props, resolved) => {
       resolved(props);
-    }, scopeId);
+    });
   });
 
   it('subscribe', () => {
-    listenerId = Store.subscribe(({newScope}) => {
-      expect(newScope).toEqual(testValue);
-    }, scopeId);
+    listenerId = scope.subscribe(({newScope}) => {
+      expect(newScope).toEqual(TEST_VALUE);
+    });
   });
 
   it('dispatch', () => {
-    Store.dispatch(actionId, testValue).then(newScope => {
-      expect(newScope).toEqual(testValue);
+    scope.dispatch(ACTION_NAME, TEST_VALUE).then(newScope => {
+      expect(newScope).toEqual(TEST_VALUE);
     });
   });
 
   it('unsubscribe', () => {
-    Store.unsubscribe(listenerId);
+    scope.unsubscribe(listenerId);
   });
 
   it('getScope', () => {
-    const scope = Store.getScope(scopeId);
-    expect(scope).toEqual(testValue);
+    expect(scope.getState()).toEqual(TEST_VALUE);
   });
 
   it('getState', () => {
-    const state = Store.getState();
+    const state = getState();
     expect(state).toEqual({
-      [ROOT_SCOPE]: {},
-      [scopeId]: testValue
+      [ROOT_SCOPE.name]: {},
+      [scope.name]: TEST_VALUE
     });
   });
 
