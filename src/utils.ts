@@ -6,16 +6,8 @@ export function uniqueId(name: string = 'default') {
   return `${name}${index ? index : ''}`;
 }
 
-export function keys(object: Object) {
-  return Object.getOwnPropertyNames(object);
-}
-
-export function values<T>(obj: { [key: string]: T }): T[] {
-  return keys(obj).map(key => obj[key]);
-}
-
 export function deepFreeze<T>(obj: T) {
-  keys(obj).forEach(function (key) {
+  Object.getOwnPropertyNames(obj).forEach(function (key) {
     let prop = obj[key];
     if (typeof prop == 'object' && prop !== null) {
       deepFreeze(prop);
