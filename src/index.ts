@@ -1,23 +1,28 @@
 import {uniqueId, deepFreeze} from './utils';
 
-type Listener = (event: { newScope, oldScope, actionName: string }) => void;
-type Action = (scope, props, resolve: (newScope) => void, reject: (error) => void) => void;
+export type Listener<T> = (event: { newScope: T, oldScope: T, actionName: string }) => void;
+export type Action<T> = (scope: T, props, resolve: (newScope: T) => void, reject: (error) => void) => void;
 
-export class Scope {
+export class Scope<T = any> {
 
-  private actions: Map<string, Action> = new Map();
-  private listeners: Map<string, Listener> = new Map();
+  private isFrozen = false;
+  private actions = new Map<string, Action<T>>();
+  private listeners = new Map<string, Listener<T>>();
 
-  constructor(readonly name: string, private state) {
+  constructor(readonly name: string, private state: T) {
   }
 
   /**
    * Registers a new action in scope.
    * @param {string} name The action name.
    * @param {Action} action The action that changes the scope
+   * @throws {Error} Will throw an error if the scope frozen or action name exists in scope
    * when it is called.
    */
-  registerAction(name: string, action: Action) {
+  registerAction(name: string, action: Action<T>) {
+    if(this.isFrozen) {
+      throw new Error(`This scope is frozen you can't add new action.`);
+    }
     if (this.actions.has(name)) {
       throw new Error(`Action name is duplicate in scope ${this.name}`);
     }
@@ -31,15 +36,16 @@ export class Scope {
    * You can use resolve to change the scope or reject to throw an exception.
    * @param {any?} props Additional data for the correct operation of the action.
    * @return {Promise<any>} You can use the promise to get a new state of scope
-   * or catch errors
+   * or catch errors.
+   * @throws {Error} Will throw an error if the actionName not present in scope.
    */
   dispatch(actionName: string, props?) {
-    const action: Action = this.actions.get(actionName);
+    const action: Action<T> = this.actions.get(actionName);
     if (!action) {
       throw new Error(`This action not exists ${actionName}`);
     }
     const oldScope = this.state;
-    return new Promise((resolve, reject) => {
+    return new Promise<T>((resolve, reject) => {
       action(oldScope, props, resolve, reject);
     }).then(newScope => {
       deepFreeze(newScope);
@@ -58,7 +64,7 @@ export class Scope {
    * By default use ROOT_SCOPE id.
    * @return {string} A listener id to remove this change listener later.
    */
-  subscribe(listener: Listener) {
+  subscribe(listener: Listener<T>) {
     const listenerId = uniqueId('listener');
     this.listeners.set(listenerId, listener);
     return listenerId;
@@ -70,6 +76,13 @@ export class Scope {
    */
   unsubscribe(id: string) {
     this.listeners.delete(id);
+  }
+
+  /**
+   * Prevents the addition of new actions to scope.
+   */
+  freeze() {
+    this.isFrozen = true;
   }
 
   /**
@@ -91,12 +104,13 @@ const scopes: Map<string, Scope> = new Map();
  * @param {any} initState The initial scope state.
  * By default use empty object.
  * @return {Scope} Scope.
+ * @throws {Error} Will throw an error if name of scope not unique.
  */
-export function createScope(name = uniqueId('scope'), initState = {}) {
+export function createScope<T = any>(name = uniqueId('scope'), initState: T = null) {
   if (scopes.has(name)) {
     throw new Error(`Scope name must unique`);
   }
-  const scope = new Scope(name, initState);
+  const scope = new Scope<T>(name, initState);
   scopes.set(name, scope);
   return scope;
 }
@@ -126,4 +140,4 @@ export function getState() {
  * This scope is global
  * @type {Scope}
  */
-export const ROOT_SCOPE = createScope('rootScope');
+export const ROOT_SCOPE = createScope('rootScope', {});
