@@ -18,6 +18,15 @@ describe('Store', () => {
     });
   });
 
+  it('freeze', () => {
+    scope.freeze();
+    try {
+      scope.registerAction('freezeTest', (scope) => scope);
+    } catch (err) {
+      expect(err).toBeTruthy();
+    }
+  });
+
   it('subscribe', () => {
     listenerId = scope.subscribe(({newScope}) => {
       expect(newScope).toEqual(TEST_VALUE);

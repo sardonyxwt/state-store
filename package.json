@@ -1,6 +1,6 @@
 {
   "name": "@sardonyxwt/state-store",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "State store",
   "keywords": [
     "sclib",
@@ -16,11 +16,10 @@
     "LICENSE",
     "README.md",
     "CHANGELOG.md",
-    "src/",
     "dist/"
   ],
   "main": "dist/state-store.min.js",
-  "typings": "src/index.ts",
+  "typings": "dist/@types/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/sardonyxwt/state-store.git"
@@ -46,11 +45,11 @@
   "devDependencies": {
     "@types/jest": "^21.1.9",
     "@types/node": "^8.0.47",
-    "awesome-typescript-loader": "^3.4.1",
     "clean-webpack-plugin": "0.1.17",
     "cross-env": "5.1.1",
     "jest": "^22.0.4",
     "ts-jest": "^22.0.0",
+    "ts-loader": "^3.4.0",
     "tslint": "^5.8.0",
     "typescript": "^2.6.0",
     "webpack": "^3.6.0",

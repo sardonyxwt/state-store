@@ -14,7 +14,8 @@
       "node_modules/@types/"
     ],
     "sourceMap": true,
-    "declaration": false
+    "declaration": true,
+    "declarationDir": "dist/@types/"
   },
   "include": [
     "src"
