@@ -1,4 +1,4 @@
-import {uniqueId, deepFreeze} from './utils';
+import {uniqueId, deepFreeze} from '@sardonyxwt/utils';
 
 export type Listener<T> = (event: { newScope: T, oldScope: T, actionName: string }) => void;
 export type Action<T> = (scope: T, props, resolve: (newScope: T) => void, reject: (error) => void) => void;
