@@ -1,4 +1,5 @@
-import {uniqueId, deepFreeze} from './utils';
+import {ObjectUtil} from '@sardonyxwt/utils/object';
+import {GeneratorUtil} from '@sardonyxwt/utils/generator';
 
 export type Listener<T> = (event: { newScope: T, oldScope: T, actionName: string }) => void;
 export type Action<T> = (scope: T, props, resolve: (newScope: T) => void, reject: (error) => void) => void;
@@ -48,7 +49,7 @@ export class Scope<T = any> {
     return new Promise<T>((resolve, reject) => {
       action(oldScope, props, resolve, reject);
     }).then(newScope => {
-      deepFreeze(newScope);
+      ObjectUtil.deepFreeze(newScope);
       this.listeners.forEach(
         it => it({oldScope, newScope, actionName})
       );
@@ -65,7 +66,7 @@ export class Scope<T = any> {
    * @return {string} A listener id to remove this change listener later.
    */
   subscribe(listener: Listener<T>) {
-    const listenerId = uniqueId('listener');
+    const listenerId = GeneratorUtil.uniqueId('listener');
     this.listeners.set(listenerId, listener);
     return listenerId;
   }
@@ -106,7 +107,7 @@ const scopes: Map<string, Scope> = new Map();
  * @return {Scope} Scope.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export function createScope<T = any>(name = uniqueId('scope'), initState: T = null) {
+export function createScope<T = any>(name = GeneratorUtil.uniqueId('scope'), initState: T = null) {
   if (scopes.has(name)) {
     throw new Error(`Scope name must unique`);
   }
