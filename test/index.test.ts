@@ -30,7 +30,7 @@ describe('Store', () => {
   it('subscribe', () => {
     listenerId = scope.subscribe(({newScope}) => {
       expect(newScope).toEqual(TEST_VALUE);
-    });
+    }, ACTION_NAME);
   });
 
   it('dispatch', () => {

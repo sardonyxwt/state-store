@@ -62,12 +62,20 @@ export class Scope<T = any> {
    * Adds a scope change listener.
    * It will be called any time an action is dispatched.
    * @param {Listener} listener A callback to be invoked on every dispatch.
-   * By default use ROOT_SCOPE id.
+   * @param {string} actionName Specific action to subscribe.
    * @return {string} A listener id to remove this change listener later.
+   * @throws {Error} Will throw an error if actionName not present in scope.
    */
-  subscribe(listener: Listener<T>) {
+  subscribe(listener: Listener<T>, actionName?: string) {
+    if(actionName && !this.actions.has(actionName)) {
+      throw new Error(`Action (${actionName}) not present in scope.`);
+    }
     const listenerId = uniqueId('listener');
-    this.listeners.set(listenerId, listener);
+    this.listeners.set(listenerId, event => {
+      if (!actionName || actionName === event.actionName) {
+        listener(event);
+      }
+    });
     return listenerId;
   }
 
