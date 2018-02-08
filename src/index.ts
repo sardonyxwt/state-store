@@ -7,8 +7,8 @@ export type Action<T> = (scope: T, props, resolve: (newScope: T) => void, reject
 export class Scope<T = any> {
 
   private isFrozen = false;
-  private actions = new Map<string, Action<T>>();
-  private listeners = new Map<string, Listener<T>>();
+  private actions: { [key: string]: Action<T> } = {};
+  private listeners: { [key: string]: Listener<T> } = {};
 
   constructor(readonly name: string, private state: T) {
   }
@@ -21,13 +21,13 @@ export class Scope<T = any> {
    * when it is called.
    */
   registerAction(name: string, action: Action<T>) {
-    if(this.isFrozen) {
+    if (this.isFrozen) {
       throw new Error(`This scope is frozen you can't add new action.`);
     }
-    if (this.actions.has(name)) {
+    if (name in this.actions) {
       throw new Error(`Action name is duplicate in scope ${this.name}`);
     }
-    this.actions.set(name, action);
+    this.actions[name] = action;
   }
 
   /**
@@ -41,7 +41,7 @@ export class Scope<T = any> {
    * @throws {Error} Will throw an error if the actionName not present in scope.
    */
   dispatch(actionName: string, props?) {
-    const action: Action<T> = this.actions.get(actionName);
+    const action: Action<T> = this.actions[actionName];
     if (!action) {
       throw new Error(`This action not exists ${actionName}`);
     }
@@ -50,8 +50,8 @@ export class Scope<T = any> {
       action(oldScope, props, resolve, reject);
     }).then(newScope => {
       deepFreeze(newScope);
-      this.listeners.forEach(
-        it => it({oldScope, newScope, actionName})
+      Object.getOwnPropertyNames(this.listeners).forEach(
+        key => this.listeners[key]({oldScope, newScope, actionName})
       );
       this.state = newScope;
       return newScope;
@@ -67,15 +67,15 @@ export class Scope<T = any> {
    * @throws {Error} Will throw an error if actionName not present in scope.
    */
   subscribe(listener: Listener<T>, actionName?: string) {
-    if(actionName && !this.actions.has(actionName)) {
+    if (actionName && !(actionName in this.actions)) {
       throw new Error(`Action (${actionName}) not present in scope.`);
     }
     const listenerId = uniqueId('listener');
-    this.listeners.set(listenerId, event => {
+    this.listeners[listenerId] = event => {
       if (!actionName || actionName === event.actionName) {
         listener(event);
       }
-    });
+    };
     return listenerId;
   }
 
@@ -84,7 +84,7 @@ export class Scope<T = any> {
    * @param {string} id Id of the listener to delete.
    */
   unsubscribe(id: string) {
-    this.listeners.delete(id);
+    delete this.listeners[id];
   }
 
   /**
@@ -104,7 +104,7 @@ export class Scope<T = any> {
 
 }
 
-const scopes: Map<string, Scope> = new Map();
+const scopes: { [key: string]: Scope } = {};
 
 /**
  * Create a new scope and return it.
@@ -116,11 +116,11 @@ const scopes: Map<string, Scope> = new Map();
  * @throws {Error} Will throw an error if name of scope not unique.
  */
 export function createScope<T = any>(name = uniqueId('scope'), initState: T = null) {
-  if (scopes.has(name)) {
+  if (name in scopes) {
     throw new Error(`Scope name must unique`);
   }
   const scope = new Scope<T>(name, initState);
-  scopes.set(name, scope);
+  scopes[name] = scope;
   return scope;
 }
 
@@ -130,9 +130,7 @@ export function createScope<T = any>(name = uniqueId('scope'), initState: T = nu
  * @return {Scope} Scope
  */
 export function getScope(scopeName) {
-  return Array.from(scopes.values()).find(
-    scope => scope.name === scopeName
-  );
+  return scopes[scopeName];
 }
 
 /**
@@ -141,7 +139,9 @@ export function getScope(scopeName) {
  */
 export function getState() {
   const state = {};
-  scopes.forEach(scope => state[scope.name] = scope.getState());
+  Object.getOwnPropertyNames(scopes).forEach(key => {
+    state[key] = scopes[key].getState();
+  });
   return state;
 }
 
