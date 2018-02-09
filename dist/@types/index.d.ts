@@ -4,7 +4,7 @@ export declare type Listener<T> = (event: {
     actionName: string;
 }) => void;
 export declare type Action<T> = (scope: T, props, resolve: (newScope: T) => void, reject: (error) => void) => void;
-export interface Scope<T> {
+export interface Scope<T = any> {
     /**
      * Registers a new action in scope.
      * @param {string} name The action name.

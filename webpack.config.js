@@ -15,6 +15,7 @@ module.exports = {
   devtool: 'source-map',
   output: {
     filename: "./dist/state-store.min.js",
+    library: 'store',
     libraryTarget: 'umd',
     umdNamedDefine: true
   },

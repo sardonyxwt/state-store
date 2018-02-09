@@ -4,7 +4,7 @@ import {uniqueId} from '@sardonyxwt/utils/generator';
 export type Listener<T> = (event: { newScope: T, oldScope: T, actionName: string }) => void;
 export type Action<T> = (scope: T, props, resolve: (newScope: T) => void, reject: (error) => void) => void;
 
-export interface Scope<T> {
+export interface Scope<T = any> {
 
   /**
    * Registers a new action in scope.
