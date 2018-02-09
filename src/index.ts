@@ -4,14 +4,7 @@ import {uniqueId} from '@sardonyxwt/utils/generator';
 export type Listener<T> = (event: { newScope: T, oldScope: T, actionName: string }) => void;
 export type Action<T> = (scope: T, props, resolve: (newScope: T) => void, reject: (error) => void) => void;
 
-export class Scope<T = any> {
-
-  private isFrozen = false;
-  private actions: { [key: string]: Action<T> } = {};
-  private listeners: { [key: string]: Listener<T> } = {};
-
-  constructor(readonly name: string, private state: T) {
-  }
+export interface Scope<T> {
 
   /**
    * Registers a new action in scope.
@@ -20,6 +13,58 @@ export class Scope<T = any> {
    * @throws {Error} Will throw an error if the scope frozen or action name exists in scope
    * when it is called.
    */
+  registerAction(name: string, action: Action<T>);
+
+  /**
+   * Dispatches an action. It is the only way to trigger a scope change.
+   * @param {string} actionName Triggered action with same name.
+   * This action change scope and return new scope.
+   * You can use resolve to change the scope or reject to throw an exception.
+   * @param {any?} props Additional data for the correct operation of the action.
+   * @return {Promise<>} You can use the promise to get a new state of scope
+   * or catch errors.
+   * @throws {Error} Will throw an error if the actionName not present in scope.
+   */
+  dispatch(actionName: string, props?): Promise<T>;
+
+  /**
+   * Adds a scope change listener.
+   * It will be called any time an action is dispatched.
+   * @param {Listener} listener A callback to be invoked on every dispatch.
+   * @param {string} actionName Specific action to subscribe.
+   * @return {string} A listener id to remove this change listener later.
+   * @throws {Error} Will throw an error if actionName not present in scope.
+   */
+  subscribe(listener: Listener<T>, actionName?: string): string;
+
+  /**
+   * Removes a scope change listener.
+   * @param {string} id Id of the listener to delete.
+   */
+  unsubscribe(id: string): boolean;
+
+  /**
+   * Prevents the addition of new actions to scope.
+   */
+  freeze(): void;
+
+  /**
+   * Returns scope state.
+   * @return Scope state.
+   */
+  getState(): T;
+
+}
+
+class ScopeImpl<T = any> implements Scope<T> {
+
+  private isFrozen = false;
+  private actions: { [key: string]: Action<T> } = {};
+  private listeners: { [key: string]: Listener<T> } = {};
+
+  constructor(readonly name: string, private state: T) {
+  }
+
   registerAction(name: string, action: Action<T>) {
     if (this.isFrozen) {
       throw new Error(`This scope is frozen you can't add new action.`);
@@ -30,16 +75,6 @@ export class Scope<T = any> {
     this.actions[name] = action;
   }
 
-  /**
-   * Dispatches an action. It is the only way to trigger a scope change.
-   * @param {string} actionName Triggered action with same name.
-   * This action change scope and return new scope.
-   * You can use resolve to change the scope or reject to throw an exception.
-   * @param {any?} props Additional data for the correct operation of the action.
-   * @return {Promise<any>} You can use the promise to get a new state of scope
-   * or catch errors.
-   * @throws {Error} Will throw an error if the actionName not present in scope.
-   */
   dispatch(actionName: string, props?) {
     const action: Action<T> = this.actions[actionName];
     if (!action) {
@@ -58,14 +93,6 @@ export class Scope<T = any> {
     });
   }
 
-  /**
-   * Adds a scope change listener.
-   * It will be called any time an action is dispatched.
-   * @param {Listener} listener A callback to be invoked on every dispatch.
-   * @param {string} actionName Specific action to subscribe.
-   * @return {string} A listener id to remove this change listener later.
-   * @throws {Error} Will throw an error if actionName not present in scope.
-   */
   subscribe(listener: Listener<T>, actionName?: string) {
     if (actionName && !(actionName in this.actions)) {
       throw new Error(`Action (${actionName}) not present in scope.`);
@@ -79,32 +106,21 @@ export class Scope<T = any> {
     return listenerId;
   }
 
-  /**
-   * Removes a scope change listener.
-   * @param {string} id Id of the listener to delete.
-   */
   unsubscribe(id: string) {
-    delete this.listeners[id];
+    return delete this.listeners[id];
   }
 
-  /**
-   * Prevents the addition of new actions to scope.
-   */
   freeze() {
     this.isFrozen = true;
   }
 
-  /**
-   * Returns scope state.
-   * @return {any} Scope state
-   */
   getState() {
     return this.state;
   }
 
 }
 
-const scopes: { [key: string]: Scope } = {};
+const scopes: { [key: string]: Scope<any> } = {};
 
 /**
  * Create a new scope and return it.
@@ -115,11 +131,11 @@ const scopes: { [key: string]: Scope } = {};
  * @return {Scope} Scope.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export function createScope<T = any>(name = uniqueId('scope'), initState: T = null) {
+export function createScope<T>(name = uniqueId('scope'), initState: T = null): Scope<T> {
   if (name in scopes) {
     throw new Error(`Scope name must unique`);
   }
-  const scope = new Scope<T>(name, initState);
+  const scope = new ScopeImpl<T>(name, initState);
   scopes[name] = scope;
   return scope;
 }

@@ -4,13 +4,7 @@ export declare type Listener<T> = (event: {
     actionName: string;
 }) => void;
 export declare type Action<T> = (scope: T, props, resolve: (newScope: T) => void, reject: (error) => void) => void;
-export declare class Scope<T = any> {
-    readonly name: string;
-    private state;
-    private isFrozen;
-    private actions;
-    private listeners;
-    constructor(name: string, state: T);
+export interface Scope<T> {
     /**
      * Registers a new action in scope.
      * @param {string} name The action name.
@@ -18,14 +12,14 @@ export declare class Scope<T = any> {
      * @throws {Error} Will throw an error if the scope frozen or action name exists in scope
      * when it is called.
      */
-    registerAction(name: string, action: Action<T>): void;
+    registerAction(name: string, action: Action<T>): any;
     /**
      * Dispatches an action. It is the only way to trigger a scope change.
      * @param {string} actionName Triggered action with same name.
      * This action change scope and return new scope.
      * You can use resolve to change the scope or reject to throw an exception.
      * @param {any?} props Additional data for the correct operation of the action.
-     * @return {Promise<any>} You can use the promise to get a new state of scope
+     * @return {Promise<>} You can use the promise to get a new state of scope
      * or catch errors.
      * @throws {Error} Will throw an error if the actionName not present in scope.
      */
@@ -43,14 +37,14 @@ export declare class Scope<T = any> {
      * Removes a scope change listener.
      * @param {string} id Id of the listener to delete.
      */
-    unsubscribe(id: string): void;
+    unsubscribe(id: string): boolean;
     /**
      * Prevents the addition of new actions to scope.
      */
     freeze(): void;
     /**
      * Returns scope state.
-     * @return {any} Scope state
+     * @return Scope state.
      */
     getState(): T;
 }
@@ -63,7 +57,7 @@ export declare class Scope<T = any> {
  * @return {Scope} Scope.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export declare function createScope<T = any>(name?: string, initState?: T): Scope<T>;
+export declare function createScope<T>(name?: string, initState?: T): Scope<T>;
 /**
  * Returns scope.
  * @param {string} scopeName Name scope, to get the Scope.
