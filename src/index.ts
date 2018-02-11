@@ -13,7 +13,7 @@ export interface Scope<T = any> {
    * @throws {Error} Will throw an error if the scope frozen or action name exists in scope
    * when it is called.
    */
-  registerAction(name: string, action: Action<T>);
+  registerAction(name: string, action: Action<T>): void;
 
   /**
    * Dispatches an action. It is the only way to trigger a scope change.
