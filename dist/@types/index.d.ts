@@ -2,9 +2,15 @@ export declare type Listener<T> = (event: {
     newScope: T;
     oldScope: T;
     actionName: string;
+    props;
 }) => void;
 export declare type Action<T> = (scope: T, props, resolve: (newScope: T) => void, reject: (error) => void) => void;
 export interface Scope<T = any> {
+    /**
+     * Scope name.
+     * Name unique for scope.
+     */
+    readonly name: string;
     /**
      * Registers a new action in scope.
      * @param {string} name The action name.
@@ -12,7 +18,7 @@ export interface Scope<T = any> {
      * @throws {Error} Will throw an error if the scope frozen or action name exists in scope
      * when it is called.
      */
-    registerAction(name: string, action: Action<T>): any;
+    registerAction(name: string, action: Action<T>): void;
     /**
      * Dispatches an action. It is the only way to trigger a scope change.
      * @param {string} actionName Triggered action with same name.
