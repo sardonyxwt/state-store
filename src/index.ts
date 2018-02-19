@@ -86,7 +86,9 @@ class ScopeImpl<T = any> implements Scope<T> {
     if (!action) {
       throw new Error(`This action not exists ${actionName}`);
     }
-    deepFreeze(props);
+    if(props && typeof props === 'object') {
+      deepFreeze(props);
+    }
     const oldScope = this.state;
     return new Promise<T>((resolve, reject) => {
       action(oldScope, props, resolve, reject);
