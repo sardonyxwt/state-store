@@ -1,16 +1,21 @@
 import {deepFreeze} from '@sardonyxwt/utils/object';
 import {uniqueId} from '@sardonyxwt/utils/generator';
 
-export type Listener<T> = (event: { newScope: T, oldScope: T, actionName: string }) => void;
-export type Action<T> = (scope: T, props, resolve: (newScope: T) => void, reject: (error) => void) => void;
+export type Listener<T> = (event: { newState: T, oldState: T, actionName: string }) => void;
+export type Action<T> = (state: T, props, resolve: (newState: T) => void, reject: (error) => void) => void;
 
 export interface Scope<T = any> {
 
   /**
+   * @var Scope name
+   */
+  readonly name: string;
+
+  /**
    * Registers a new action in scope.
    * @param {string} name The action name.
-   * @param {Action} action The action that changes the scope
-   * @throws {Error} Will throw an error if the scope frozen or action name exists in scope
+   * @param {Action} action The action that changes the state of scope
+   * @throws {Error} Will throw an error if the scope locked or action name exists in scope
    * when it is called.
    */
   registerAction(name: string, action: Action<T>): void;
@@ -18,8 +23,8 @@ export interface Scope<T = any> {
   /**
    * Dispatches an action. It is the only way to trigger a scope change.
    * @param {string} actionName Triggered action with same name.
-   * This action change scope and return new scope.
-   * You can use resolve to change the scope or reject to throw an exception.
+   * This action change state of scope and return new state.
+   * You can use resolve to change the state or reject to throw an exception.
    * @param {any?} props Additional data for the correct operation of the action.
    * @return {Promise<>} You can use the promise to get a new state of scope
    * or catch errors.
@@ -44,9 +49,26 @@ export interface Scope<T = any> {
   unsubscribe(id: string): boolean;
 
   /**
+   * Adds a scope synchronized listener.
+   * It will be called any time an action is dispatched.
+   * @param {object} object Object to synchronized.
+   * @param {string} key Object property key for synchronized.
+   * @param {string} actionName Specific action to synchronize.
+   * @return {string} A listener id to remove this change listener later.
+   * @throws {Error} Will throw an error if actionName not present in scope.
+   */
+  synchronize(object: object, key: string, actionName?: string): string;
+
+  /**
    * Prevents the addition of new actions to scope.
    */
-  freeze(): void;
+  lock(): void;
+
+  /**
+   * Check is locked status.
+   * @return Is locked status.
+   */
+  isLocked(): boolean;
 
   /**
    * Returns scope state.
@@ -67,7 +89,7 @@ class ScopeImpl<T = any> implements Scope<T> {
 
   registerAction(name: string, action: Action<T>) {
     if (this.isFrozen) {
-      throw new Error(`This scope is frozen you can't add new action.`);
+      throw new Error(`This scope is locked you can't add new action.`);
     }
     if (name in this.actions) {
       throw new Error(`Action name is duplicate in scope ${this.name}`);
@@ -80,16 +102,16 @@ class ScopeImpl<T = any> implements Scope<T> {
     if (!action) {
       throw new Error(`This action not exists ${actionName}`);
     }
-    const oldScope = this.state;
+    const oldState = this.state;
     return new Promise<T>((resolve, reject) => {
-      action(oldScope, props, resolve, reject);
-    }).then(newScope => {
-      deepFreeze(newScope);
+      action(oldState, props, resolve, reject);
+    }).then(newState => {
+      deepFreeze(newState);
       Object.getOwnPropertyNames(this.listeners).forEach(
-        key => this.listeners[key]({oldScope, newScope, actionName})
+        key => this.listeners[key]({oldState, newState, actionName})
       );
-      this.state = newScope;
-      return newScope;
+      this.state = newState;
+      return newState;
     });
   }
 
@@ -106,12 +128,23 @@ class ScopeImpl<T = any> implements Scope<T> {
     return listenerId;
   }
 
+  synchronize(object: object, key: string, actionName?: string) {
+    object[key] = this.getState();
+    return this.subscribe(({newState}) => {
+      object[key] = newState;
+    }, actionName);
+  }
+
   unsubscribe(id: string) {
     return delete this.listeners[id];
   }
 
-  freeze() {
+  lock() {
     this.isFrozen = true;
+  }
+
+  isLocked() {
+    return this.isFrozen;
   }
 
   getState() {

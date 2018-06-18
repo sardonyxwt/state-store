@@ -5,6 +5,8 @@ describe('Store', () => {
 
   let scope: Scope;
   let listenerId;
+  let objectSynchronizeId;
+  let synchronizeObject = {};
   const ACTION_NAME = 'action';
   const TEST_VALUE = 1000;
 
@@ -18,8 +20,8 @@ describe('Store', () => {
     });
   });
 
-  it('freeze', () => {
-    scope.freeze();
+  it('lock', () => {
+    scope.lock();
     try {
       scope.registerAction('freezeTest', (scope) => scope);
     } catch (err) {
@@ -27,10 +29,18 @@ describe('Store', () => {
     }
   });
 
+  it('isLocked', () => {
+    expect(scope.isLocked()).toEqual(true);
+  });
+
   it('subscribe', () => {
-    listenerId = scope.subscribe(({newScope}) => {
-      expect(newScope).toEqual(TEST_VALUE);
+    listenerId = scope.subscribe(({newState}) => {
+      expect(newState).toEqual(TEST_VALUE);
     }, ACTION_NAME);
+  });
+
+  it('synchronize', () => {
+    objectSynchronizeId = scope.synchronize(synchronizeObject, 'state');
   });
 
   it('dispatch', () => {
@@ -41,6 +51,12 @@ describe('Store', () => {
 
   it('unsubscribe', () => {
     scope.unsubscribe(listenerId);
+    scope.unsubscribe(objectSynchronizeId);
+  });
+
+  it('synchronize object check', () => {
+    const state = scope.getState();
+    expect({state}).toEqual(synchronizeObject);
   });
 
   it('getScope', () => {
