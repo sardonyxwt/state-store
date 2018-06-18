@@ -59,8 +59,8 @@ counterScope.isLocked();
 
 // You can use subscribe() to update the UI in response to state changes.
 let allActionListenerId = counterScope.subscribe(
-  ({oldScope, newScope, actionId}) => {
-    console.log(oldScope, newScope, actionId)
+  ({oldScope, newScope, actionId, props}) => {
+    console.log(oldScope, newScope, actionId, props)
   }
 );
 
