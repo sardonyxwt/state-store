@@ -1,13 +1,14 @@
 import {deepFreeze} from '@sardonyxwt/utils/object';
 import {uniqueId} from '@sardonyxwt/utils/generator';
 
-export type Listener<T> = (event: { newState: T, oldState: T, actionName: string }) => void;
+export type Listener<T> = (event: { newState: T, oldState: T, actionName: string, props }) => void;
 export type Action<T> = (state: T, props, resolve: (newState: T) => void, reject: (error) => void) => void;
 
 export interface Scope<T = any> {
 
   /**
-   * @var Scope name
+   * @var Scope name.
+   * Name unique for scope.
    */
   readonly name: string;
 
@@ -102,13 +103,16 @@ class ScopeImpl<T = any> implements Scope<T> {
     if (!action) {
       throw new Error(`This action not exists ${actionName}`);
     }
+    if(props && typeof props === 'object') {
+      deepFreeze(props);
+    }
     const oldState = this.state;
     return new Promise<T>((resolve, reject) => {
       action(oldState, props, resolve, reject);
     }).then(newState => {
       deepFreeze(newState);
       Object.getOwnPropertyNames(this.listeners).forEach(
-        key => this.listeners[key]({oldState, newState, actionName})
+        key => this.listeners[key]({oldState, newState, actionName, props})
       );
       this.state = newState;
       return newState;

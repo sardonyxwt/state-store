@@ -2,11 +2,13 @@ export declare type Listener<T> = (event: {
     newState: T;
     oldState: T;
     actionName: string;
+    props;
 }) => void;
 export declare type Action<T> = (state: T, props, resolve: (newState: T) => void, reject: (error) => void) => void;
 export interface Scope<T = any> {
     /**
-     * @var Scope name
+     * @var Scope name.
+     * Name unique for scope.
      */
     readonly name: string;
     /**
