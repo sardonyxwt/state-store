@@ -68,11 +68,16 @@ export interface Scope<T = any> {
      * @return Scope state.
      */
     getState(): T;
+    /**
+     * Returns support actions.
+     * @return Support actions.
+     */
+    getSupportActions(): string[];
 }
 /**
  * Create a new scope and return it.
- * @param {string} name The name of scope
- * By default generate unique name
+ * @param {string} name The name of scope.
+ * @default Generate unique name.
  * @param {any} initState The initial scope state.
  * By default use empty object.
  * @return {Scope} Scope.
@@ -80,11 +85,23 @@ export interface Scope<T = any> {
  */
 export declare function createScope<T>(name?: string, initState?: T): Scope<T>;
 /**
+ * Compose a new scope and return it.
+ * @description All scopes is auto lock.
+ * @param {string} name The name of scope
+ * @param {(Scope | string)[]} scopes Scopes to compose.
+ * Length must be greater than one
+ * @return {Scope} Compose scope.
+ * @throws {Error} Will throw an error if scopes length less fewer than two.
+ * @throws {Error} Will throw an error if name of scope not unique.
+ */
+export declare function composeScope(name: any, scopes: (Scope | string)[]): Scope;
+/**
  * Returns scope.
  * @param {string} scopeName Name scope, to get the Scope.
  * @return {Scope} Scope
+ * @throws {Error} Will throw an error if scope not present.
  */
-export declare function getScope(scopeName: any): Scope<any>;
+export declare function getScope(scopeName: string): Scope<any>;
 /**
  * Returns all scope states.
  * @return {{string: any}} Scope states
