@@ -89,8 +89,8 @@ export interface Scope<T = any> {
 class ScopeImpl<T = any> implements Scope<T> {
 
   private isFrozen = false;
-  private actions: { [key: string]: Action<T> } = {};
-  private listeners: { [key: string]: Listener<T> } = {};
+  protected actions: { [key: string]: Action<T> } = {};
+  protected listeners: { [key: string]: Listener<T> } = {};
 
   constructor(readonly name: string, private state: T) {
   }
@@ -174,13 +174,27 @@ class ComposeScopeImpl extends ScopeImpl<{}> {
     super(name, {});
 
     let actionNames: string[] = [];
+
     scopes.forEach(scope => {
-      scope.lock();
       actionNames = [...actionNames, ...scope.getSupportActions()];
+
+      scope.lock();
+      scope.subscribe(({actionName, props, oldState}) => {
+        const currentState = this.getState();
+        Object.getOwnPropertyNames(this.listeners)
+          .forEach(key => this.listeners[key]({
+            oldState: {...currentState, [scope.name]: oldState},
+            newState: currentState,
+            actionName,
+            props
+          }));
+      });
     });
+
     actionNames = actionNames.filter(
       (actionName, i, self) => self.indexOf(actionName) === i
     );
+
     actionNames.forEach(actionName => this.registerAction(
       actionName, (state, props, resolve, reject) => {
         let dispatchPromises = scopes.filter(
@@ -193,6 +207,7 @@ class ComposeScopeImpl extends ScopeImpl<{}> {
         ).catch(reject);
       }
     ));
+
     this.lock();
   }
 
