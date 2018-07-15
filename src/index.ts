@@ -1,5 +1,6 @@
-import {deepFreeze} from '@sardonyxwt/utils/object';
-import {uniqueId} from '@sardonyxwt/utils/generator';
+import { deepFreeze } from '@sardonyxwt/utils/object';
+import { uniqueId } from '@sardonyxwt/utils/generator';
+import { syncPromises } from '@sardonyxwt/utils/synchronized';
 
 export type Listener<T> = (event: { newState: T, oldState: T, actionName: string, props }) => void;
 export type Action<T> = (state: T, props, resolve: (newState: T) => void, reject: (error) => void) => void;
@@ -76,6 +77,12 @@ export interface Scope<T = any> {
    * @return Scope state.
    */
   getState(): T;
+
+  /**
+   * Returns support actions.
+   * @return Support actions.
+   */
+  getSupportActions(): string[];
 
 }
 
@@ -155,14 +162,58 @@ class ScopeImpl<T = any> implements Scope<T> {
     return this.state;
   }
 
+  getSupportActions() {
+    return Object.getOwnPropertyNames(this.actions);
+  }
+
+}
+
+class ComposeScopeImpl extends ScopeImpl<{}> {
+
+  constructor(readonly name: string, private scopes: Scope[]) {
+    super(name, {});
+
+    let actionNames: string[] = [];
+    scopes.forEach(scope => {
+      scope.lock();
+      actionNames = [...actionNames, ...scope.getSupportActions()];
+    });
+    actionNames = actionNames.filter(
+      (actionName, i, self) => self.indexOf(actionName) === i
+    );
+    actionNames.forEach(actionName => this.registerAction(
+      actionName, (state, props, resolve, reject) => {
+        let dispatchPromises = scopes.filter(
+          scope => scope.getSupportActions().findIndex(
+            it => it === actionName
+          ) >= 0
+        ).map(scope => scope.dispatch(actionName, props));
+        syncPromises(dispatchPromises).then(
+          () => resolve(this.getState())
+        ).catch(reject);
+      }
+    ));
+    this.lock();
+  }
+
+  getState(): {} {
+    let state = {};
+
+    this.scopes.forEach(
+      scope => state[scope.name] = scope.getState()
+    );
+
+    return state;
+  }
+
 }
 
 const scopes: { [key: string]: Scope<any> } = {};
 
 /**
  * Create a new scope and return it.
- * @param {string} name The name of scope
- * By default generate unique name
+ * @param {string} name The name of scope.
+ * @default Generate unique name.
  * @param {any} initState The initial scope state.
  * By default use empty object.
  * @return {Scope} Scope.
@@ -178,11 +229,43 @@ export function createScope<T>(name = uniqueId('scope'), initState: T = null): S
 }
 
 /**
+ * Compose a new scope and return it.
+ * @description All scopes is auto lock.
+ * @param {string} name The name of scope
+ * @param {(Scope | string)[]} scopes Scopes to compose.
+ * Length must be greater than one
+ * @return {Scope} Compose scope.
+ * @throws {Error} Will throw an error if scopes length less fewer than two.
+ * @throws {Error} Will throw an error if name of scope not unique.
+ */
+export function composeScope(name, scopes: (Scope | string)[]): Scope {
+  if (name in scopes) {
+    throw new Error(`Scope name must unique`);
+  }
+  let composeScopes = scopes.map(
+    scope => typeof scope === "string" ? getScope(scope) : scope
+  ).filter(
+    (scope, i, self) => scope && self.indexOf(scope) === i
+  );
+  const MIN_COMPOSE_SCOPE_COUNT = 2;
+  if (composeScopes.length < MIN_COMPOSE_SCOPE_COUNT) {
+    throw new Error(`Compose scopes length must be greater than one`);
+  }
+  const scope = new ComposeScopeImpl(name, composeScopes);
+  scopes[name] = scope;
+  return scope;
+}
+
+/**
  * Returns scope.
  * @param {string} scopeName Name scope, to get the Scope.
  * @return {Scope} Scope
+ * @throws {Error} Will throw an error if scope not present.
  */
-export function getScope(scopeName) {
+export function getScope(scopeName: string) {
+  if (!scopes[scopeName]) {
+    throw new Error(`Scope with name ${scopeName} not present`);
+  }
   return scopes[scopeName];
 }
 
