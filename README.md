@@ -21,7 +21,7 @@ To specify how the actions transform the scope, you write pure *action* and regi
 That's it!
 
 ```js
-import {createScope} from '@sardonyxwt/state-store';
+import {createScope, composeScope} from '@sardonyxwt/state-store';
 
 const INCREMENT_ACTION = 'increment';
 const DECREMENT_ACTION = 'decrement';
@@ -94,6 +94,16 @@ counterScope.unsubscribe(synchronizeObject1Id);
 counterScope.unsubscribe(synchronizeObject2Id);
 
 console.log(counterScope.getState());
+
+// You can use getSupportActions to get supported actions of scope.
+console.log(counterScope.getSupportActions());
+
+// You can use composeScope to create compose scope.
+const composedScope = composeScope('ComposeScope', [counterScope, ROOT_SCOPE]);
+
+composedScope.dispatch(SET_COUNTER_ACTION, 2000);
+
+console.log(composedScope.getState())
 ```
 
 ### License

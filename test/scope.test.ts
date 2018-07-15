@@ -1,9 +1,10 @@
 /// <reference types="jest" />
 import {createScope, getState, Scope, ROOT_SCOPE} from '../src';
 
-describe('Store', () => {
+describe('Scope', () => {
 
   let scope: Scope;
+
   let listenerId;
   let objectSynchronizeId;
   let synchronizeObject = {};
@@ -69,6 +70,11 @@ describe('Store', () => {
       [ROOT_SCOPE.name]: {},
       [scope.name]: TEST_VALUE
     });
+  });
+
+  it('getSupportActions', () => {
+    expect(scope.getSupportActions())
+      .toEqual([ACTION_NAME]);
   });
 
 });
