@@ -1,6 +1,6 @@
 ## [state-store](https://github.com/sardonyxwt/state-store) 
 
-state-store is a predictable state container for JavaScript and Typescript apps. 
+state-store is a predictable async state container for JavaScript and Typescript apps. 
 
 ### Installation
 

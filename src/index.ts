@@ -89,6 +89,7 @@ export interface Scope<T = any> {
 class ScopeImpl<T = any> implements Scope<T> {
 
   private isFrozen = false;
+  private actionQueue: (() => void)[] = [];
   protected actions: { [key: string]: Action<T> } = {};
   protected listeners: { [key: string]: Listener<T> } = {};
 
@@ -107,21 +108,40 @@ class ScopeImpl<T = any> implements Scope<T> {
 
   dispatch(actionName: string, props?) {
     const action: Action<T> = this.actions[actionName];
+
     if (!action) {
       throw new Error(`This action not exists ${actionName}`);
     }
+
     if(props && typeof props === 'object') {
       deepFreeze(props);
     }
-    const oldState = this.state;
+
+    let oldState;
+
     return new Promise<T>((resolve, reject) => {
-      action(oldState, props, resolve, reject);
+      const isFirstAction  = this.actionQueue.length === 0;
+      const deferredAction = () => {
+        oldState = this.getState();
+        action(oldState, props, resolve, reject);
+      };
+      this.actionQueue.push(deferredAction);
+      if (isFirstAction) {
+        deferredAction();
+      }
     }).then(newState => {
       deepFreeze(newState);
       Object.getOwnPropertyNames(this.listeners).forEach(
         key => this.listeners[key]({oldState, newState, actionName, props})
       );
       this.state = newState;
+      return newState;
+    }).then(newState => {
+      this.actionQueue.shift();
+      if (this.actionQueue.length > 0) {
+        const deferredAction = this.actionQueue[0];
+        deferredAction();
+      }
       return newState;
     });
   }
