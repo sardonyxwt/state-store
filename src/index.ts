@@ -119,6 +119,14 @@ class ScopeImpl<T = any> implements Scope<T> {
 
     let oldState;
 
+    const startNextDeferredAction = () => {
+      this.actionQueue.shift();
+      if (this.actionQueue.length > 0) {
+        const deferredAction = this.actionQueue[0];
+        deferredAction();
+      }
+    };
+
     return new Promise<T>((resolve, reject) => {
       const isFirstAction  = this.actionQueue.length === 0;
       const deferredAction = () => {
@@ -135,14 +143,11 @@ class ScopeImpl<T = any> implements Scope<T> {
         key => this.listeners[key]({oldState, newState, actionName, props})
       );
       this.state = newState;
+      startNextDeferredAction();
       return newState;
-    }).then(newState => {
-      this.actionQueue.shift();
-      if (this.actionQueue.length > 0) {
-        const deferredAction = this.actionQueue[0];
-        deferredAction();
-      }
-      return newState;
+    }, error => {
+      startNextDeferredAction();
+      return error;
     });
   }
 
