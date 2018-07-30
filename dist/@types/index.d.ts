@@ -34,11 +34,11 @@ export interface Scope<T = any> {
      * Adds a scope change listener.
      * It will be called any time an action is dispatched.
      * @param {Listener} listener A callback to be invoked on every dispatch.
-     * @param {string} actionName Specific action to subscribe.
+     * @param {string | string[]} actionName Specific action to subscribe.
      * @return {string} A listener id to remove this change listener later.
      * @throws {Error} Will throw an error if actionName not present in scope.
      */
-    subscribe(listener: Listener<T>, actionName?: string): string;
+    subscribe(listener: Listener<T>, actionName?: string | string[]): string;
     /**
      * Removes a scope change listener.
      * @param {string} id Id of the listener to delete.

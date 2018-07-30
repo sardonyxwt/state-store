@@ -38,11 +38,11 @@ export interface Scope<T = any> {
    * Adds a scope change listener.
    * It will be called any time an action is dispatched.
    * @param {Listener} listener A callback to be invoked on every dispatch.
-   * @param {string} actionName Specific action to subscribe.
+   * @param {string | string[]} actionName Specific action to subscribe.
    * @return {string} A listener id to remove this change listener later.
    * @throws {Error} Will throw an error if actionName not present in scope.
    */
-  subscribe(listener: Listener<T>, actionName?: string): string;
+  subscribe(listener: Listener<T>, actionName?: string | string[]): string;
 
   /**
    * Removes a scope change listener.
@@ -151,13 +151,29 @@ class ScopeImpl<T = any> implements Scope<T> {
     });
   }
 
-  subscribe(listener: Listener<T>, actionName?: string) {
-    if (actionName && !(actionName in this.actions)) {
-      throw new Error(`Action (${actionName}) not present in scope.`);
+  subscribe(listener: Listener<T>, actionName?: string | string[]) {
+    const actionNames = [];
+
+    if (Array.isArray(actionName)) {
+      actionNames.push(...actionName);
+    } else if (typeof actionName === 'string') {
+      actionNames.push(actionName);
     }
+
+    actionNames.forEach(actionName => {
+      if (!(actionName in this.actions)) {
+        throw new Error(`Action (${actionName}) not present in scope.`);
+      }
+    });
+
     const listenerId = uniqueId('listener');
     this.listeners[listenerId] = event => {
-      if (!actionName || actionName === event.actionName) {
+
+      const isActionPresentInScope = actionNames.findIndex(
+        actionName => actionName === event.actionName
+      ) !== -1;
+
+      if (actionNames.length === 0 || isActionPresentInScope) {
         listener(event);
       }
     };

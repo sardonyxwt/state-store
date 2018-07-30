@@ -64,7 +64,7 @@ let allActionListenerId = counterScope.subscribe(
   }
 );
 
-// You can use subscribe() with specific actionName to handle only this action.
+// You can use subscribe() with specific actionName (you can use array of actions) to handle only this action.
 let setCounterActionListenerId = counterScope.subscribe(
   () => console.log('set counter value action dispatch.'),
   SET_COUNTER_ACTION
