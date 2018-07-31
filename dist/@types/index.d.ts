@@ -1,10 +1,41 @@
-export declare type Listener<T> = (event: {
+export declare type ScopeEvent<T = any> = {
     newState: T;
     oldState: T;
+    scopeName: string;
     actionName: string;
     props;
-}) => void;
-export declare type Action<T> = (state: T, props, resolve: (newState: T) => void, reject: (error) => void) => void;
+};
+export declare type ScopeError<T = any> = {
+    reason;
+    oldState: T;
+    scopeName: string;
+    actionName: string;
+    props;
+};
+export declare type ScopeListener<T> = (event: ScopeEvent<T>) => void;
+export declare type ScopeAction<T> = (state: T, props, resolve: (newState: T) => void, reject: (error) => void) => void;
+export interface StoreDevTool {
+    /**
+     * Call when created new scope.
+     * @param {Scope} scope Created scope.
+     */
+    onCreate(scope: Scope): any;
+    /**
+     * Call when change scope (lock, registerAction).
+     * @param {Scope} scope Changed scope.
+     */
+    onChange(scope: Scope): any;
+    /**
+     * Call when in any scope dispatch action.
+     * @param {ScopeEvent} event Action event.
+     */
+    onAction(event: ScopeEvent): any;
+    /**
+     * Call when in any scope dispatch action error.
+     * @param {ScopeError} error Action error.
+     */
+    onActionError(error: ScopeError): any;
+}
 export interface Scope<T = any> {
     /**
      * @var Scope name.
@@ -14,31 +45,31 @@ export interface Scope<T = any> {
     /**
      * Registers a new action in scope.
      * @param {string} name The action name.
-     * @param {Action} action The action that changes the state of scope
+     * @param {ScopeAction} action The action that changes the state of scope
      * @throws {Error} Will throw an error if the scope locked or action name exists in scope
      * when it is called.
      */
-    registerAction(name: string, action: Action<T>): void;
+    registerAction(name: string, action: ScopeAction<T>): void;
     /**
      * Dispatches an action. It is the only way to trigger a scope change.
      * @param {string} actionName Triggered action with same name.
      * This action change state of scope and return new state.
      * You can use resolve to change the state or reject to throw an exception.
      * @param {any?} props Additional data for the correct operation of the action.
-     * @return {Promise<>} You can use the promise to get a new state of scope
+     * @return {Promise} You can use the promise to get a new state of scope
      * or catch errors.
      * @throws {Error} Will throw an error if the actionName not present in scope.
      */
-    dispatch(actionName: string, props?: any): Promise<T>;
+    dispatch(actionName: string, props?: any): Promise<T | ScopeError<T>>;
     /**
      * Adds a scope change listener.
      * It will be called any time an action is dispatched.
-     * @param {Listener} listener A callback to be invoked on every dispatch.
+     * @param {ScopeListener} listener A callback to be invoked on every dispatch.
      * @param {string | string[]} actionName Specific action to subscribe.
      * @return {string} A listener id to remove this change listener later.
      * @throws {Error} Will throw an error if actionName not present in scope.
      */
-    subscribe(listener: Listener<T>, actionName?: string | string[]): string;
+    subscribe(listener: ScopeListener<T>, actionName?: string | string[]): string;
     /**
      * Removes a scope change listener.
      * @param {string} id Id of the listener to delete.
@@ -94,7 +125,7 @@ export declare function createScope<T>(name?: string, initState?: T): Scope<T>;
  * @throws {Error} Will throw an error if scopes length less fewer than two.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export declare function composeScope(name: any, scopes: (Scope | string)[]): Scope;
+export declare function composeScope(name: string, scopes: (Scope | string)[]): Scope;
 /**
  * Returns scope.
  * @param {string} scopeName Name scope, to get the Scope.
@@ -107,6 +138,11 @@ export declare function getScope(scopeName: string): Scope<any>;
  * @return {{string: any}} Scope states
  */
 export declare function getState(): {};
+/**
+ * Set store dev tool.
+ * @param {StoreDevTool} devTool Dev tool middleware, to handle store changes.
+ */
+export declare function setStoreDevTool(devTool: StoreDevTool): void;
 /**
  * This scope is global
  * @type {Scope}

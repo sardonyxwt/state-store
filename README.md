@@ -21,7 +21,7 @@ To specify how the actions transform the scope, you write pure *action* and regi
 That's it!
 
 ```js
-import {createScope, composeScope} from '@sardonyxwt/state-store';
+import {createScope, composeScope, setStoreDevTool} from '@sardonyxwt/state-store';
 
 const INCREMENT_ACTION = 'increment';
 const DECREMENT_ACTION = 'decrement';
@@ -59,8 +59,8 @@ counterScope.isLocked();
 
 // You can use subscribe() to update the UI in response to state changes.
 let allActionListenerId = counterScope.subscribe(
-  ({oldScope, newScope, actionId, props}) => {
-    console.log(oldScope, newScope, actionId, props)
+  ({oldScope, newScope, scopeName, actionName, props}) => {
+    console.log(oldScope, newScope, scopeName, actionName, props)
   }
 );
 
@@ -103,7 +103,31 @@ const composedScope = composeScope('ComposeScope', [counterScope, ROOT_SCOPE]);
 
 composedScope.dispatch(SET_COUNTER_ACTION, 2000);
 
-console.log(composedScope.getState())
+console.log(composedScope.getState());
+
+// You can use setDevTool to set middleware dev tool
+setStoreDevTool({
+  //Call when created new scope.
+  onCreate(scope) {
+    console.log('Scope with name: ' + scope.name + ' created');
+  },
+  //Call when change scope (lock, registerAction).
+  onChange(scope) {
+    console.log('Scope with name: ' + scope.name + ' changed', {
+      supportActions: scope.getSupportActions(),
+      isLock: scope.isLocked(),
+      state: scope.getState()
+    })
+  },
+  //Call when in any scope dispatch action.
+  onAction(event) {
+    console.log('StoreAction: ', event)
+  },
+  //Call when in any scope dispatch action error.
+  onActionError(error) {
+    console.log('StoreActionError: ', error)
+  }
+});
 ```
 
 ### License
