@@ -60,7 +60,7 @@ export interface Scope<T = any> {
      * or catch errors.
      * @throws {Error} Will throw an error if the actionName not present in scope.
      */
-    dispatch(actionName: string, props?: any): Promise<T | ScopeError<T>>;
+    dispatch(actionName: string, props?: any): Promise<T>;
     /**
      * Adds a scope change listener.
      * It will be called any time an action is dispatched.

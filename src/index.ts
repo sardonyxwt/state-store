@@ -63,7 +63,7 @@ export interface Scope<T = any> {
    * or catch errors.
    * @throws {Error} Will throw an error if the actionName not present in scope.
    */
-  dispatch(actionName: string, props?): Promise<T | ScopeError<T>>;
+  dispatch(actionName: string, props?): Promise<T>;
 
   /**
    * Adds a scope change listener.
@@ -171,7 +171,7 @@ class ScopeImpl<T = any> implements Scope<T> {
       if (isFirstAction) {
         deferredAction();
       }
-    }).then<T, ScopeError<T>>(newState => {
+    }).then(newState => {
       deepFreeze(newState);
       const event: ScopeEvent<T> = {
         oldState,
@@ -202,7 +202,7 @@ class ScopeImpl<T = any> implements Scope<T> {
         storeDevTool.onActionError(error);
       }
       startNextDeferredAction();
-      return error;
+      throw error;
     });
   }
 
