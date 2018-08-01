@@ -105,13 +105,13 @@ composedScope.dispatch(SET_COUNTER_ACTION, 2000);
 
 console.log(composedScope.getState());
 
-// You can use setDevTool to set middleware dev tool
+// You can use setStoreDevTool to set middleware dev tool
 setStoreDevTool({
   //Call when created new scope.
   onCreate(scope) {
     console.log('Scope with name: ' + scope.name + ' created');
   },
-  //Call when change scope (lock, registerAction).
+  //Call when change scope (lock, registerAction, dispatch).
   onChange(scope) {
     console.log('Scope with name: ' + scope.name + ' changed', {
       supportActions: scope.getSupportActions(),
