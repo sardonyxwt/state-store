@@ -27,6 +27,7 @@ const INCREMENT_ACTION = 'increment';
 const DECREMENT_ACTION = 'decrement';
 const SET_COUNTER_ACTION = 'setCounter';
 
+// Scope middleware example
 const logScopeMiddleware = {
   postSetup: (scope) => {
     console.log('Scope(' + scope.name + ') with LogScopeMiddleware complete setup.')
