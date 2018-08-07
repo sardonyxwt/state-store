@@ -27,8 +27,20 @@ const INCREMENT_ACTION = 'increment';
 const DECREMENT_ACTION = 'decrement';
 const SET_COUNTER_ACTION = 'setCounter';
 
+const logScopeMiddleware = {
+  postSetup: (scope) => {
+    console.log('Scope(' + scope.name + ') with LogScopeMiddleware complete setup.')
+  },
+  appendActionMiddleware: (action) => {
+    return (state, props, resolve, reject) => {
+      console.log('Log from LogScopeMiddleware: ', state, props);
+      action(state, props, resolve, reject);
+    }
+  }
+};
+
 // Create a new scope
-const counterScope = createScope('counterScope', 0);
+const counterScope = createScope('counterScope', 0, [logScopeMiddleware]);
 
 // Registers a new action in COUNTER_SCOPE
 counterScope.registerAction(

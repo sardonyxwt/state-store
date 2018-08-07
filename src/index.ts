@@ -1,51 +1,27 @@
-import { deepFreeze } from '@sardonyxwt/utils/object';
-import { uniqueId } from '@sardonyxwt/utils/generator';
+import {deepFreeze} from '@sardonyxwt/utils/object';
+import {uniqueId} from '@sardonyxwt/utils/generator';
 
 export type ScopeEvent<T = any> = { newState: T, oldState: T, scopeName: string, actionName: string, props };
 export type ScopeError<T = any> = { reason, oldState: T, scopeName: string, actionName: string, props };
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export type ScopeAction<T> = (state: T, props, resolve: (newState: T) => void, reject: (error) => void) => void;
 
-export interface StoreDevTool {
-
-  /**
-   * Call when created new scope.
-   * @param {Scope} scope Created scope.
-   */
-  onCreate(scope: Scope);
-
-  /**
-   * Call when change scope (lock, registerAction).
-   * @param {Scope} scope Changed scope.
-   */
-  onChange(scope: Scope);
-
-  /**
-   * Call when in any scope dispatch action.
-   * @param {ScopeEvent} event Action event.
-   */
-  onAction(event: ScopeEvent);
-
-  /**
-   * Call when in any scope dispatch action error.
-   * @param {ScopeError} error Action error.
-   */
-  onActionError(error: ScopeError);
-
-}
-
-let storeDevTool: StoreDevTool = null;
-
+/**
+ * @interface Scope
+ * @summary The whole state of your app is stored in an scopes inside a single store.
+ */
 export interface Scope<T = any> {
 
   /**
-   * @var Scope name.
-   * Name unique for scope.
+   * @var name.
+   * @summary Scope name.
+   * @description Name unique for scope.
    */
   readonly name: string;
 
   /**
-   * Registers a new action in scope.
+   * @function registerAction
+   * @summary Registers a new action in scope.
    * @param {string} name The action name.
    * @param {ScopeAction} action The action that changes the state of scope
    * @throws {Error} Will throw an error if the scope locked or action name exists in scope
@@ -54,9 +30,11 @@ export interface Scope<T = any> {
   registerAction(name: string, action: ScopeAction<T>): void;
 
   /**
-   * Dispatches an action. It is the only way to trigger a scope change.
+   * @function dispatch
+   * @summary Dispatches an action.
+   * @description Dispatches an action is the only way to trigger a scope change.
    * @param {string} actionName Triggered action with same name.
-   * This action change state of scope and return new state.
+   * @description This action change state of scope and return new state.
    * You can use resolve to change the state or reject to throw an exception.
    * @param {any?} props Additional data for the correct operation of the action.
    * @return {Promise} You can use the promise to get a new state of scope
@@ -66,8 +44,9 @@ export interface Scope<T = any> {
   dispatch(actionName: string, props?): Promise<T>;
 
   /**
-   * Adds a scope change listener.
-   * It will be called any time an action is dispatched.
+   * @function subscribe
+   * @summary Adds a scope change listener.
+   * @description It will be called any time an action is dispatched.
    * @param {ScopeListener} listener A callback to be invoked on every dispatch.
    * @param {string | string[]} actionName Specific action to subscribe.
    * @return {string} A listener id to remove this change listener later.
@@ -76,14 +55,17 @@ export interface Scope<T = any> {
   subscribe(listener: ScopeListener<T>, actionName?: string | string[]): string;
 
   /**
-   * Removes a scope change listener.
+   * @function unsubscribe
+   * @summary Removes a scope change listener.
    * @param {string} id Id of the listener to delete.
+   * @return {boolean} Status of unsubscribe action.
    */
   unsubscribe(id: string): boolean;
 
   /**
-   * Adds a scope synchronized listener.
-   * It will be called any time an action is dispatched.
+   * @function synchronize
+   * @summary Adds a scope synchronized listener.
+   * @description Synchronized listener will be called any time an action is dispatched.
    * @param {object} object Object to synchronized.
    * @param {string} key Object property key for synchronized.
    * @param {string} actionName Specific action to synchronize.
@@ -93,38 +75,111 @@ export interface Scope<T = any> {
   synchronize(object: object, key: string, actionName?: string): string;
 
   /**
-   * Prevents the addition of new actions to scope.
+   * @function lock
+   * @summary Prevents the addition of new actions to scope.
    */
   lock(): void;
 
   /**
-   * Check is locked status.
-   * @return Is locked status.
+   * @function isLocked
+   * @summary Check is locked status.
+   * @return {boolean} Scope locked status.
    */
   isLocked(): boolean;
 
   /**
-   * Returns scope state.
+   * @function getState
+   * @summary Returns scope state.
    * @return Scope state.
    */
   getState(): T;
 
   /**
-   * Returns support actions.
-   * @return Support actions.
+   * @function getSupportActions
+   * @summary Returns support actions.
+   * @return {string[]} Support actions.
    */
   getSupportActions(): string[];
 
 }
+
+/**
+ * @interface ScopeMiddleware
+ * @summary You can use middleware to use aspect programing.
+ */
+export interface ScopeMiddleware<T = any> {
+
+  /**
+   * @function postSetup
+   * @param {Scope} scope Created scope.
+   * @summary You can use this method to setup custom actions in scope or
+   * subscribe to actions in scope. Lock scope in this point is bad practice.
+   */
+  postSetup(scope: Scope<T>): void;
+
+  /**
+   * @function appendActionMiddleware
+   * @summary This method wraps the action with a new action and returns it.
+   * @param {ScopeAction} action Wrapped action.
+   * @return {ScopeAction} Action that wrapped old action
+   */
+  appendActionMiddleware(action: ScopeAction<T>): ScopeAction<T>;
+
+}
+
+/**
+ * @interface StoreDevTool
+ * @summary You can use StoreDevTool to handle all action in store.
+ */
+export interface StoreDevTool {
+
+  /**
+   * @function onCreate
+   * @summary Call when created new scope.
+   * @param {Scope} scope Created scope.
+   */
+  onCreate(scope: Scope): void;
+
+  /**
+   * @function onChange
+   * @summary Call when change scope (lock, registerAction, dispatch).
+   * @param {Scope} scope Changed scope.
+   */
+  onChange(scope: Scope): void;
+
+  /**
+   * @function onAction
+   * @summary Call when in any scope dispatch action.
+   * @param {ScopeEvent} event Action event.
+   */
+  onAction(event: ScopeEvent): void;
+
+  /**
+   * @function onActionError
+   * @summary Call when in any scope dispatch action error.
+   * @param {ScopeError} error Action error.
+   */
+  onActionError(error: ScopeError): void;
+
+}
+
+let storeDevTool: StoreDevTool = null;
 
 class ScopeImpl<T = any> implements Scope<T> {
 
   private isFrozen = false;
   private actionQueue: (() => void)[] = [];
   private actions: { [key: string]: ScopeAction<T> } = {};
+  private middleware: ScopeMiddleware<T>[] = [];
   protected listeners: { [key: string]: ScopeListener<T> } = {};
 
-  constructor(readonly name: string, private state: T) {
+  constructor(
+    readonly name: string,
+    private state: T,
+    middleware: ScopeMiddleware<T>[]) {
+    // This code needed to save middleware correct order in dispatch method.
+    this.middleware = [...middleware];
+    this.middleware.reverse();
   }
 
   registerAction(name: string, action: ScopeAction<T>) {
@@ -141,13 +196,13 @@ class ScopeImpl<T = any> implements Scope<T> {
   }
 
   dispatch(actionName: string, props?) {
-    const action: ScopeAction<T> = this.actions[actionName];
+    let action: ScopeAction<T> = this.actions[actionName];
 
     if (!action) {
       throw new Error(`This action not exists ${actionName}`);
     }
 
-    if(props && typeof props === 'object') {
+    if (props && typeof props === 'object') {
       deepFreeze(props);
     }
 
@@ -162,9 +217,12 @@ class ScopeImpl<T = any> implements Scope<T> {
     };
 
     return new Promise<T>((resolve, reject) => {
-      const isFirstAction  = this.actionQueue.length === 0;
+      const isFirstAction = this.actionQueue.length === 0;
       const deferredAction = () => {
         oldState = this.getState();
+        this.middleware.forEach(
+          middleware => action = middleware.appendActionMiddleware(action)
+        );
         action(oldState, props, resolve, reject);
       };
       this.actionQueue.push(deferredAction);
@@ -269,8 +327,16 @@ class ScopeImpl<T = any> implements Scope<T> {
 
 class ComposeScopeImpl extends ScopeImpl<{}> {
 
-  constructor(readonly name: string, private scopes: Scope[]) {
-    super(name, {});
+  constructor(
+    readonly name: string,
+    private scopes: Scope[],
+    middleware: ScopeMiddleware[]
+  ) {
+    super(name, {}, middleware);
+
+    if (this.isLocked()) {
+      throw new Error('You can not use middleware that lock scope to create a composite scope.');
+    }
 
     let actionNames: string[] = [];
 
@@ -326,20 +392,29 @@ class ComposeScopeImpl extends ScopeImpl<{}> {
 const scopes: { [key: string]: Scope<any> } = {};
 
 /**
- * Create a new scope and return it.
+ * @function createScope
+ * @summary Create a new scope and return it.
  * @param {string} name The name of scope.
  * @default Generate unique name.
  * @param {any} initState The initial scope state.
- * By default use empty object.
+ * @default Empty object.
+ * @param {ScopeMiddleware[]} middleware The scope middleware.
+ * @description You can use middleware to use aspect programing.
+ * @default Empty array.
  * @return {Scope} Scope.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export function createScope<T>(name = uniqueId('scope'), initState: T = null): Scope<T> {
+export function createScope<T>(
+  name = uniqueId('scope'),
+  initState: T = null,
+  middleware: ScopeMiddleware<T>[] = []
+): Scope<T> {
   if (name in scopes) {
     throw new Error(`Scope name must unique`);
   }
-  const scope = new ScopeImpl<T>(name, initState);
+  const scope = new ScopeImpl<T>(name, initState, middleware);
   scopes[name] = scope;
+  middleware.forEach(middleware => middleware.postSetup(scope));
   if (storeDevTool) {
     storeDevTool.onCreate(scope);
   }
@@ -347,16 +422,24 @@ export function createScope<T>(name = uniqueId('scope'), initState: T = null): S
 }
 
 /**
- * Compose a new scope and return it.
- * @description All scopes is auto lock.
+ * @function composeScope
+ * @summary Compose a new scope and return it.
+ * @description Compose a new scope and return it. All scopes is auto lock.
  * @param {string} name The name of scope
  * @param {(Scope | string)[]} scopes Scopes to compose.
- * Length must be greater than one
+ * @description Length must be greater than one
+ * @param {ScopeMiddleware[]} middleware The scope middleware.
+ * @description You can use middleware to use aspect programing.
+ * @default Empty array.
  * @return {Scope} Compose scope.
  * @throws {Error} Will throw an error if scopes length less fewer than two.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export function composeScope(name: string, scopes: (Scope | string)[]): Scope {
+export function composeScope(
+  name: string,
+  scopes: (Scope | string)[],
+  middleware: ScopeMiddleware[] = []
+): Scope {
   if (name in scopes) {
     throw new Error(`Scope name must unique`);
   }
@@ -369,8 +452,9 @@ export function composeScope(name: string, scopes: (Scope | string)[]): Scope {
   if (composeScopes.length < MIN_COMPOSE_SCOPE_COUNT) {
     throw new Error(`Compose scopes length must be greater than one`);
   }
-  const scope = new ComposeScopeImpl(name, composeScopes);
+  const scope = new ComposeScopeImpl(name, composeScopes, middleware);
   scopes[name] = scope;
+  middleware.forEach(middleware => middleware.postSetup(scope));
   if (storeDevTool) {
     storeDevTool.onCreate(scope);
   }
@@ -378,7 +462,8 @@ export function composeScope(name: string, scopes: (Scope | string)[]): Scope {
 }
 
 /**
- * Returns scope.
+ * @function getScope
+ * @summary Returns scope.
  * @param {string} scopeName Name scope, to get the Scope.
  * @return {Scope} Scope
  * @throws {Error} Will throw an error if scope not present.
@@ -391,7 +476,8 @@ export function getScope(scopeName: string) {
 }
 
 /**
- * Returns all scope states.
+ * @function getState
+ * @summary Returns all scope states.
  * @return {{string: any}} Scope states
  */
 export function getState() {
@@ -403,7 +489,8 @@ export function getState() {
 }
 
 /**
- * Set store dev tool.
+ * @function setStoreDevTool
+ * @summary Set store dev tool.
  * @param {StoreDevTool} devTool Dev tool middleware, to handle store changes.
  */
 export function setStoreDevTool(devTool: StoreDevTool) {
@@ -411,7 +498,8 @@ export function setStoreDevTool(devTool: StoreDevTool) {
 }
 
 /**
- * This scope is global
+ * @var ROOT_SCOPE
+ * @summary This scope is global
  * @type {Scope}
  */
 export const ROOT_SCOPE = createScope('rootScope', {});
