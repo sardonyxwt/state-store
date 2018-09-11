@@ -238,15 +238,15 @@ class ScopeImpl<T = any> implements Scope<T> {
         actionName,
         props
       };
-      Object.getOwnPropertyNames(this.listeners).forEach(key => {
-        const listener = this.listeners[key];
-        if (listener) listener(event);
-      });
       this.state = newState;
       if (storeDevTool) {
         storeDevTool.onAction(event);
         storeDevTool.onChange(this);
       }
+      Object.getOwnPropertyNames(this.listeners).forEach(key => {
+        const listener = this.listeners[key];
+        if (listener) listener(event);
+      });
       startNextDeferredAction();
       return newState;
     }, reason => {
