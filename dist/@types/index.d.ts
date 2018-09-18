@@ -70,9 +70,12 @@ export interface Scope<T = any> {
      * @description Synchronized listener will be called any time an action is dispatched.
      * @param {object} object Object to synchronized.
      * @param {string} key Object property key for synchronized.
+     * If not specific use Object.getOwnPropertyNames to synchronize all properties.
      * @param {string} actionName Specific action to synchronize.
      * @return {string} A listener id to remove this change listener later.
-     * @throws {Error} Will throw an error if actionName not present in scope.
+     * @throws {Error} Will throw an errors:
+     * - if actionName not present in scope.
+     * - if {key} param not specified and state isn`t object.
      */
     synchronize(object: object, key: string, actionName?: string): string;
     /**
