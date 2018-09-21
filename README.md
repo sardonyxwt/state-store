@@ -54,7 +54,8 @@ counterScope.registerAction(
   (scope, props, resolved) => resolved(scope - 1),
 );
 
-counterScope.registerAction(
+// You can save action dispatcher and call later.
+const actionDispatcher = counterScope.registerAction(
   SET_COUNTER_ACTION,
   (scope, props, resolved, rejected) => {
     if(typeof props !== 'number') {
@@ -100,6 +101,12 @@ counterScope.dispatch(SET_COUNTER_ACTION, 1000)
 
 counterScope.dispatch(SET_COUNTER_ACTION, "invalid props")
   .catch(err => console.log(err));
+
+// dispatch action with action dispatcher.
+actionDispatcher(1000);
+// or you can call action dispatcher like this.
+// The method name is the same as the action name.
+counterScope.setCounter(2000);
 
 counterScope.unsubscribe(allActionListenerId);
 counterScope.unsubscribe(setCounterActionListenerId);
