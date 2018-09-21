@@ -194,20 +194,24 @@ class ScopeImpl<T = any> implements Scope<T> {
     return Object.getOwnPropertyNames(this._actions);
   }
 
-  registerAction<P>(name: string, action: ScopeAction<T, P>) {
+  registerAction<P>(actionName: string, action: ScopeAction<T, P>) {
     if (this._isFrozen) {
       throw new Error(`This scope is locked you can't add new action.`);
     }
-    if (name in this._actions) {
-      throw new Error(`Action name is duplicate in scope ${this.name}`);
+    if (actionName in this._actions || actionName in this) {
+      throw new Error(`Action name ${actionName} is duplicate in scope ${this.name} or is reserved in scope`);
     }
-    this._actions[name] = action;
+    this._actions[actionName] = action;
     if (storeDevTool) {
       storeDevTool.onChange(this);
     }
-    return (props: P) => {
-      return this.dispatch(name, props);
+    const actionDispatcher = (props: P) => {
+      return this.dispatch(actionName, props);
     };
+
+    this[actionName] = actionDispatcher;
+
+    return actionDispatcher;
   }
 
   dispatch(actionName: string, props?) {
