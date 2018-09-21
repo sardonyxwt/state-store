@@ -4,7 +4,8 @@ import {uniqueId} from '@sardonyxwt/utils/generator';
 export type ScopeEvent<T = any> = { newState: T, oldState: T, scopeName: string, actionName: string, props };
 export type ScopeError<T = any> = { reason, oldState: T, scopeName: string, actionName: string, props };
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
-export type ScopeAction<T> = (state: T, props, resolve: (newState: T) => void, reject: (error) => void) => void;
+export type ScopeAction<T, P = any> = (state: T, props: P, resolve: (newState: T) => void, reject: (error) => void) => void;
+export type ScopeActionDispatcher<T, P = any> = (props: P) => Promise<T>;
 
 /**
  * @interface Scope
@@ -20,6 +21,24 @@ export interface Scope<T = any> {
   readonly name: string;
 
   /**
+   * @var state
+   * @summary Scope state.
+   */
+  readonly state: T;
+
+  /**
+   * @var isLocked
+   * @summary Is locked status.
+   */
+  readonly isLocked: boolean;
+
+  /**
+   * @var supportActions
+   * @summary Returns support actions.
+   */
+  readonly supportActions: string[];
+
+  /**
    * @function registerAction
    * @summary Registers a new action in scope.
    * @param {string} name The action name.
@@ -27,7 +46,7 @@ export interface Scope<T = any> {
    * @throws {Error} Will throw an error if the scope locked or action name exists in scope
    * when it is called.
    */
-  registerAction(name: string, action: ScopeAction<T>): void;
+  registerAction<P>(name: string, action: ScopeAction<T, P>): ScopeActionDispatcher<T, P>;
 
   /**
    * @function dispatch
@@ -82,27 +101,6 @@ export interface Scope<T = any> {
    * @summary Prevents the addition of new actions to scope.
    */
   lock(): void;
-
-  /**
-   * @function isLocked
-   * @summary Check is locked status.
-   * @return {boolean} Scope locked status.
-   */
-  isLocked(): boolean;
-
-  /**
-   * @function getState
-   * @summary Returns scope state.
-   * @return Scope state.
-   */
-  getState(): T;
-
-  /**
-   * @function getSupportActions
-   * @summary Returns support actions.
-   * @return {string[]} Support actions.
-   */
-  getSupportActions(): string[];
 
 }
 
@@ -170,36 +168,50 @@ let storeDevTool: StoreDevTool = null;
 
 class ScopeImpl<T = any> implements Scope<T> {
 
-  private isFrozen = false;
-  private actionQueue: (() => void)[] = [];
-  private actions: { [key: string]: ScopeAction<T> } = {};
-  private middleware: ScopeMiddleware<T>[] = [];
-  protected listeners: { [key: string]: ScopeListener<T> } = {};
+  private _state: T;
+  private _isFrozen = false;
+  private _actionQueue: (() => void)[] = [];
+  private _actions: { [key: string]: ScopeAction<T> } = {};
+  private _middleware: ScopeMiddleware<T>[] = [];
+  protected _listeners: { [key: string]: ScopeListener<T> } = {};
 
-  constructor(
-    readonly name: string,
-    private state: T,
-    middleware: ScopeMiddleware<T>[]) {
+  constructor(readonly name: string, initState: T, middleware: ScopeMiddleware<T>[]) {
     // This code needed to save middleware correct order in dispatch method.
-    this.middleware = [...middleware];
-    this.middleware.reverse();
+    this._state = initState;
+    this._middleware = [...middleware];
+    this._middleware.reverse();
   }
 
-  registerAction(name: string, action: ScopeAction<T>) {
-    if (this.isFrozen) {
+  get isLocked() {
+    return this._isFrozen;
+  }
+
+  get state() {
+    return this._state;
+  }
+
+  get supportActions() {
+    return Object.getOwnPropertyNames(this._actions);
+  }
+
+  registerAction<P>(name: string, action: ScopeAction<T, P>) {
+    if (this._isFrozen) {
       throw new Error(`This scope is locked you can't add new action.`);
     }
-    if (name in this.actions) {
+    if (name in this._actions) {
       throw new Error(`Action name is duplicate in scope ${this.name}`);
     }
-    this.actions[name] = action;
+    this._actions[name] = action;
     if (storeDevTool) {
       storeDevTool.onChange(this);
     }
+    return (props: P) => {
+      return this.dispatch(name, props);
+    };
   }
 
   dispatch(actionName: string, props?) {
-    let action: ScopeAction<T> = this.actions[actionName];
+    let action: ScopeAction<T> = this._actions[actionName];
 
     if (!action) {
       throw new Error(`This action not exists ${actionName}`);
@@ -212,23 +224,23 @@ class ScopeImpl<T = any> implements Scope<T> {
     let oldState;
 
     const startNextDeferredAction = () => {
-      this.actionQueue.shift();
-      if (this.actionQueue.length > 0) {
-        const deferredAction = this.actionQueue[0];
+      this._actionQueue.shift();
+      if (this._actionQueue.length > 0) {
+        const deferredAction = this._actionQueue[0];
         deferredAction();
       }
     };
 
     return new Promise<T>((resolve, reject) => {
-      const isFirstAction = this.actionQueue.length === 0;
+      const isFirstAction = this._actionQueue.length === 0;
       const deferredAction = () => {
-        oldState = this.getState();
-        this.middleware.forEach(
+        oldState = this.state;
+        this._middleware.forEach(
           middleware => action = middleware.appendActionMiddleware(action)
         );
         action(oldState, props, resolve, reject);
       };
-      this.actionQueue.push(deferredAction);
+      this._actionQueue.push(deferredAction);
       if (isFirstAction) {
         deferredAction();
       }
@@ -241,13 +253,13 @@ class ScopeImpl<T = any> implements Scope<T> {
         actionName,
         props
       };
-      this.state = newState;
+      this._state = newState;
       if (storeDevTool) {
         storeDevTool.onAction(event);
         storeDevTool.onChange(this);
       }
-      Object.getOwnPropertyNames(this.listeners).forEach(key => {
-        const listener = this.listeners[key];
+      Object.getOwnPropertyNames(this._listeners).forEach(key => {
+        const listener = this._listeners[key];
         if (listener) listener(event);
       });
       startNextDeferredAction();
@@ -269,28 +281,32 @@ class ScopeImpl<T = any> implements Scope<T> {
   }
 
   subscribe(listener: ScopeListener<T>, actionName?: string | string[]) {
-    const actionNames = [];
+    const actionNames: string[] = [];
 
     if (Array.isArray(actionName)) {
       actionNames.push(...actionName);
-    } else if (typeof actionName === 'string') {
+    } else if (actionName) {
       actionNames.push(actionName);
     }
 
     actionNames.forEach(actionName => {
-      if (!(actionName in this.actions)) {
+      if (!(actionName in this._actions)) {
         throw new Error(`Action (${actionName}) not present in scope.`);
       }
     });
 
     const listenerId = uniqueId('listener');
-    this.listeners[listenerId] = event => {
+    this._listeners[listenerId] = event => {
+
+      if (actionNames.length === 0) {
+        return listener(event);
+      }
 
       const isActionPresentInScope = actionNames.findIndex(
         actionName => actionName === event.actionName
       ) !== -1;
 
-      if (actionNames.length === 0 || isActionPresentInScope) {
+      if (isActionPresentInScope) {
         listener(event);
       }
     };
@@ -298,7 +314,7 @@ class ScopeImpl<T = any> implements Scope<T> {
   }
 
   synchronize(object: object, key?: string, actionName?: string) {
-    const state = this.getState();
+    const state = this.state;
 
     let listener: (newState: T) => void = null;
 
@@ -320,32 +336,20 @@ class ScopeImpl<T = any> implements Scope<T> {
       throw new Error('If specific key not set, state must be object.');
     }
 
-    listener(this.getState());
+    listener(this.state);
 
     return this.subscribe(({newState}) => listener(newState), actionName);
   }
 
   unsubscribe(id: string) {
-    return delete this.listeners[id];
+    return delete this._listeners[id];
   }
 
   lock() {
-    this.isFrozen = true;
+    this._isFrozen = true;
     if (storeDevTool) {
       storeDevTool.onChange(this);
     }
-  }
-
-  isLocked() {
-    return this.isFrozen;
-  }
-
-  getState() {
-    return this.state;
-  }
-
-  getSupportActions() {
-    return Object.getOwnPropertyNames(this.actions);
   }
 
 }
@@ -359,20 +363,20 @@ class ComposeScopeImpl extends ScopeImpl<{}> {
   ) {
     super(name, {}, middleware);
 
-    if (this.isLocked()) {
+    if (this.isLocked) {
       throw new Error('You can not use middleware that lock scope to create a composite scope.');
     }
 
     let actionNames: string[] = [];
 
     scopes.forEach(scope => {
-      actionNames = [...actionNames, ...scope.getSupportActions()];
+      actionNames = [...actionNames, ...scope.supportActions];
 
       scope.lock();
       scope.subscribe(({actionName, props, oldState}) => {
-        const currentState = this.getState();
-        Object.getOwnPropertyNames(this.listeners)
-          .forEach(key => this.listeners[key]({
+        const currentState = this.state;
+        Object.getOwnPropertyNames(this._listeners)
+          .forEach(key => this._listeners[key]({
             oldState: {...currentState, [scope.name]: oldState},
             newState: currentState,
             scopeName: scope.name,
@@ -389,12 +393,12 @@ class ComposeScopeImpl extends ScopeImpl<{}> {
     actionNames.forEach(actionName => this.registerAction(
       actionName, (state, props, resolve, reject) => {
         let dispatchPromises = scopes.filter(
-          scope => scope.getSupportActions().findIndex(
+          scope => scope.supportActions.findIndex(
             it => it === actionName
           ) >= 0
         ).map(scope => scope.dispatch(actionName, props));
         Promise.all(dispatchPromises).then(
-          () => resolve(this.getState())
+          () => resolve(this.state)
         ).catch(reject);
       }
     ));
@@ -402,12 +406,10 @@ class ComposeScopeImpl extends ScopeImpl<{}> {
     this.lock();
   }
 
-  getState(): {} {
+  get state(): {} {
     let state = {};
 
-    this.scopes.forEach(
-      scope => state[scope.name] = scope.getState()
-    );
+    this.scopes.forEach(scope => state[scope.name] = scope.state);
 
     return state;
   }
@@ -508,7 +510,7 @@ export function getScope(scopeName: string) {
 export function getState() {
   const state = {};
   Object.getOwnPropertyNames(scopes).forEach(key => {
-    state[key] = scopes[key].getState();
+    state[key] = scopes[key].state;
   });
   return state;
 }

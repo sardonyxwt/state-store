@@ -13,7 +13,8 @@ export declare type ScopeError<T = any> = {
     props;
 };
 export declare type ScopeListener<T> = (event: ScopeEvent<T>) => void;
-export declare type ScopeAction<T> = (state: T, props, resolve: (newState: T) => void, reject: (error) => void) => void;
+export declare type ScopeAction<T, P = any> = (state: T, props: P, resolve: (newState: T) => void, reject: (error) => void) => void;
+export declare type ScopeActionDispatcher<T, P = any> = (props: P) => Promise<T>;
 /**
  * @interface Scope
  * @summary The whole state of your app is stored in an scopes inside a single store.
@@ -26,6 +27,21 @@ export interface Scope<T = any> {
      */
     readonly name: string;
     /**
+     * @var state
+     * @summary Scope state.
+     */
+    readonly state: T;
+    /**
+     * @var isLocked
+     * @summary Is locked status.
+     */
+    readonly isLocked: boolean;
+    /**
+     * @var supportActions
+     * @summary Returns support actions.
+     */
+    readonly supportActions: string[];
+    /**
      * @function registerAction
      * @summary Registers a new action in scope.
      * @param {string} name The action name.
@@ -33,7 +49,7 @@ export interface Scope<T = any> {
      * @throws {Error} Will throw an error if the scope locked or action name exists in scope
      * when it is called.
      */
-    registerAction(name: string, action: ScopeAction<T>): void;
+    registerAction<P>(name: string, action: ScopeAction<T, P>): ScopeActionDispatcher<T, P>;
     /**
      * @function dispatch
      * @summary Dispatches an action.
@@ -83,24 +99,6 @@ export interface Scope<T = any> {
      * @summary Prevents the addition of new actions to scope.
      */
     lock(): void;
-    /**
-     * @function isLocked
-     * @summary Check is locked status.
-     * @return {boolean} Scope locked status.
-     */
-    isLocked(): boolean;
-    /**
-     * @function getState
-     * @summary Returns scope state.
-     * @return Scope state.
-     */
-    getState(): T;
-    /**
-     * @function getSupportActions
-     * @summary Returns support actions.
-     * @return {string[]} Support actions.
-     */
-    getSupportActions(): string[];
 }
 /**
  * @interface ScopeMiddleware

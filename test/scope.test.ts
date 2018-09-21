@@ -48,7 +48,7 @@ describe('Scope', () => {
   });
 
   it('isLocked', () => {
-    expect(scope.isLocked()).toEqual(true);
+    expect(scope.isLocked).toEqual(true);
   });
 
   it('subscribe', () => {
@@ -73,12 +73,12 @@ describe('Scope', () => {
   });
 
   it('synchronize object check', () => {
-    const state = scope.getState();
+    const state = scope.state;
     expect({state}).toEqual(synchronizeObject);
   });
 
   it('getScope', () => {
-    expect(scope.getState()).toEqual(TEST_VALUE);
+    expect(scope.state).toEqual(TEST_VALUE);
   });
 
   it('getState', () => {
@@ -90,7 +90,7 @@ describe('Scope', () => {
   });
 
   it('getSupportActions', () => {
-    expect(scope.getSupportActions())
+    expect(scope.supportActions)
       .toEqual([ACTION_NAME]);
   });
 

@@ -67,8 +67,8 @@ counterScope.registerAction(
 // You can use lock() to forbid add new action to scope.
 counterScope.lock();
 
-// You can use isLocked() to check is scope is lock.
-counterScope.isLocked();
+// You can use isLocked to check is scope is lock.
+counterScope.isLocked;
 
 // You can use subscribe() to update the UI in response to state changes.
 let allActionListenerId = counterScope.subscribe(
@@ -106,17 +106,17 @@ counterScope.unsubscribe(setCounterActionListenerId);
 counterScope.unsubscribe(synchronizeObject1Id);
 counterScope.unsubscribe(synchronizeObject2Id);
 
-console.log(counterScope.getState());
+console.log(counterScope.state);
 
 // You can use getSupportActions to get supported actions of scope.
-console.log(counterScope.getSupportActions());
+console.log(counterScope.supportActions);
 
 // You can use composeScope to create compose scope.
 const composedScope = composeScope('ComposeScope', [counterScope, ROOT_SCOPE]);
 
 composedScope.dispatch(SET_COUNTER_ACTION, 2000);
 
-console.log(composedScope.getState());
+console.log(composedScope.state);
 
 // You can use setStoreDevTool to set middleware dev tool
 setStoreDevTool({
@@ -127,9 +127,9 @@ setStoreDevTool({
   //Call when change scope (lock, registerAction, dispatch).
   onChange(scope) {
     console.log('Scope with name: ' + scope.name + ' changed', {
-      supportActions: scope.getSupportActions(),
-      isLock: scope.isLocked(),
-      state: scope.getState()
+      supportActions: scope.supportActions,
+      isLock: scope.isLocked,
+      state: scope.state
     })
   },
   //Call when in any scope dispatch action.
