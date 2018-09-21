@@ -42,7 +42,9 @@ export interface Scope<T = any> {
    * @function registerAction
    * @summary Registers a new action in scope.
    * @param {string} name The action name.
-   * @param {ScopeAction} action The action that changes the state of scope
+   * @param {ScopeAction} action The action that changes the state of scope.
+   * @return {ScopeActionDispatcher} Return action dispatcher.
+   * You can use it to dispatch action without call scope.dispatch.
    * @throws {Error} Will throw an error if the scope locked or action name exists in scope
    * when it is called.
    */
@@ -56,8 +58,8 @@ export interface Scope<T = any> {
    * @description This action change state of scope and return new state.
    * You can use resolve to change the state or reject to throw an exception.
    * @param {any?} props Additional data for the correct operation of the action.
-   * @return {Promise} You can use the promise to get a new state of scope
-   * or catch errors.
+   * @return {Promise} Return promise.
+   * You can use it to get a new state of scope or catch errors.
    * @throws {Error} Will throw an error if the actionName not present in scope.
    */
   dispatch(actionName: string, props?): Promise<T>;
