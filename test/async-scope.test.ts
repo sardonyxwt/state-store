@@ -1,9 +1,9 @@
 /// <reference types="jest" />
-import {createScope, getState, setStoreDevTool, Scope, ScopeEvent, ScopeError, ROOT_SCOPE} from '../src';
+import {createAsyncScope, getState, AsyncScope, ROOT_SCOPE} from '../src';
 
 describe('Scope', () => {
 
-  let scope: Scope;
+  let scope: AsyncScope<number>;
 
   let listenerId;
   let objectSynchronizeId;
@@ -11,30 +11,13 @@ describe('Scope', () => {
   const ACTION_NAME = 'action';
   const TEST_VALUE = 1000;
 
-  it('setStoreDevTool', () => {
-    setStoreDevTool({
-      onAction(event: ScopeEvent) {
-
-      },
-      onActionError(error: ScopeError) {
-
-      },
-      onChange(scope: Scope) {
-
-      },
-      onCreate(scope: Scope) {
-
-      }
-    });
-  });
-
   it('createScope', () => {
-    scope = createScope();
+    scope = createAsyncScope();
   });
 
   it('registerAction', () => {
-    scope.registerAction(ACTION_NAME, (scope, props, resolved) => {
-      resolved(props);
+    scope.registerAction(ACTION_NAME, (scope, props) => {
+      return Promise.resolve(props);
     });
   });
 

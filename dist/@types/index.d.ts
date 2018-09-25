@@ -13,13 +13,13 @@ export declare type ScopeError<T = any> = {
     props;
 };
 export declare type ScopeListener<T> = (event: ScopeEvent<T>) => void;
-export declare type ScopeAction<T, P = any> = (state: T, props: P, resolve: (newState: T) => void, reject: (error) => void) => void;
-export declare type ScopeActionDispatcher<T, P = any> = (props: P) => Promise<T>;
+export declare type ScopeAction<T, IN, OUT> = (state: T, props: IN) => OUT;
+export declare type ScopeActionDispatcher<T, IN, OUT> = (props: IN) => OUT;
 /**
  * @interface Scope
  * @summary The whole state of your app is stored in an scopes inside a single store.
  */
-export interface Scope<T = any> {
+export interface Scope<T = any, OUT = any> {
     /**
      * @var name.
      * @summary Scope name.
@@ -51,7 +51,7 @@ export interface Scope<T = any> {
      * @throws {Error} Will throw an error if the scope locked or action name exists in scope
      * when it is called.
      */
-    registerAction<P>(name: string, action: ScopeAction<T, P>): ScopeActionDispatcher<T, P>;
+    registerAction<IN>(name: string, action: ScopeAction<T, IN, OUT>): ScopeActionDispatcher<T, IN, OUT>;
     /**
      * @function dispatch
      * @summary Dispatches an action.
@@ -64,7 +64,7 @@ export interface Scope<T = any> {
      * You can use it to get a new state of scope or catch errors.
      * @throws {Error} Will throw an error if the actionName not present in scope.
      */
-    dispatch(actionName: string, props?: any): Promise<T>;
+    dispatch(actionName: string, props?: any): OUT;
     /**
      * @function subscribe
      * @summary Adds a scope change listener.
@@ -103,24 +103,38 @@ export interface Scope<T = any> {
     lock(): void;
 }
 /**
+ * @interface SyncScope
+ * @summary The whole state of your app is stored in an scopes inside a single store.
+ * @description Use this scope type with promises actions.
+ */
+export interface SyncScope<T = any> extends Scope<T, T> {
+}
+/**
+ * @interface AsyncScope
+ * @summary The whole state of your app is stored in an scopes inside a single store.
+ * @description Use this scope type with synced actions.
+ */
+export interface AsyncScope<T = any> extends Scope<T, Promise<T>> {
+}
+/**
  * @interface ScopeMiddleware
  * @summary You can use middleware to use aspect programing.
  */
-export interface ScopeMiddleware<T = any> {
+export interface ScopeMiddleware<T, OUT> {
     /**
      * @function postSetup
      * @param {Scope} scope Created scope.
      * @summary You can use this method to setup custom actions in scope or
      * subscribe to actions in scope. Lock scope in this point is bad practice.
      */
-    postSetup(scope: Scope<T>): void;
+    postSetup(scope: Scope<T, OUT>): void;
     /**
      * @function appendActionMiddleware
      * @summary This method wraps the action with a new action and returns it.
      * @param {ScopeAction} action Wrapped action.
      * @return {ScopeAction} Action that wrapped old action
      */
-    appendActionMiddleware(action: ScopeAction<T>): ScopeAction<T>;
+    appendActionMiddleware<IN>(action: ScopeAction<T, IN, OUT>): ScopeAction<T, IN, OUT>;
 }
 /**
  * @interface StoreDevTool
@@ -153,7 +167,7 @@ export interface StoreDevTool {
     onActionError(error: ScopeError): void;
 }
 /**
- * @function createScope
+ * @function createAsyncScope
  * @summary Create a new scope and return it.
  * @param {string} name The name of scope.
  * @default Generate unique name.
@@ -165,7 +179,21 @@ export interface StoreDevTool {
  * @return {Scope} Scope.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export declare function createScope<T>(name?: string, initState?: T, middleware?: ScopeMiddleware<T>[]): Scope<T>;
+export declare function createAsyncScope<T>(name?: any, initState?: T, middleware?: ScopeMiddleware<T, Promise<T>>[]): AsyncScope<T>;
+/**
+ * @function createSyncScope
+ * @summary Create a new scope and return it.
+ * @param {string} name The name of scope.
+ * @default Generate unique name.
+ * @param {any} initState The initial scope state.
+ * @default Empty object.
+ * @param {ScopeMiddleware[]} middleware The scope middleware.
+ * @description You can use middleware to use aspect programing.
+ * @default Empty array.
+ * @return {Scope} Scope.
+ * @throws {Error} Will throw an error if name of scope not unique.
+ */
+export declare function createSyncScope<T>(name?: any, initState?: T, middleware?: ScopeMiddleware<T, T>[]): SyncScope<T>;
 /**
  * @function composeScope
  * @summary Compose a new scope and return it.
@@ -180,7 +208,7 @@ export declare function createScope<T>(name?: string, initState?: T, middleware?
  * @throws {Error} Will throw an error if scopes length less fewer than two.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export declare function composeScope(name: string, scopes: (Scope | string)[], middleware?: ScopeMiddleware[]): Scope;
+export declare function composeScope(name: string, scopes: (Scope | string)[], middleware?: ScopeMiddleware<any, Promise<{}>>[]): AsyncScope<{}>;
 /**
  * @function getScope
  * @summary Returns scope.
@@ -188,7 +216,7 @@ export declare function composeScope(name: string, scopes: (Scope | string)[], m
  * @return {Scope} Scope
  * @throws {Error} Will throw an error if scope not present.
  */
-export declare function getScope(scopeName: string): Scope<any>;
+export declare function getScope(scopeName: string): Scope<any, any>;
 /**
  * @function getState
  * @summary Returns all scope states.
@@ -206,4 +234,4 @@ export declare function setStoreDevTool(devTool: StoreDevTool): void;
  * @summary This scope is global
  * @type {Scope}
  */
-export declare const ROOT_SCOPE: Scope<{}>;
+export declare const ROOT_SCOPE: AsyncScope<{}>;

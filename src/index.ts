@@ -4,14 +4,14 @@ import {uniqueId} from '@sardonyxwt/utils/generator';
 export type ScopeEvent<T = any> = { newState: T, oldState: T, scopeName: string, actionName: string, props };
 export type ScopeError<T = any> = { reason, oldState: T, scopeName: string, actionName: string, props };
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
-export type ScopeAction<T, P = any> = (state: T, props: P, resolve: (newState: T) => void, reject: (error) => void) => void;
-export type ScopeActionDispatcher<T, P = any> = (props: P) => Promise<T>;
+export type ScopeAction<T, IN, OUT> = (state: T, props: IN) => OUT;
+export type ScopeActionDispatcher<T, IN, OUT> = (props: IN) => OUT;
 
 /**
  * @interface Scope
  * @summary The whole state of your app is stored in an scopes inside a single store.
  */
-export interface Scope<T = any> {
+export interface Scope<T = any, OUT = any> {
 
   /**
    * @var name.
@@ -48,7 +48,7 @@ export interface Scope<T = any> {
    * @throws {Error} Will throw an error if the scope locked or action name exists in scope
    * when it is called.
    */
-  registerAction<P>(name: string, action: ScopeAction<T, P>): ScopeActionDispatcher<T, P>;
+  registerAction<IN>(name: string, action: ScopeAction<T, IN, OUT>): ScopeActionDispatcher<T, IN, OUT>;
 
   /**
    * @function dispatch
@@ -62,7 +62,7 @@ export interface Scope<T = any> {
    * You can use it to get a new state of scope or catch errors.
    * @throws {Error} Will throw an error if the actionName not present in scope.
    */
-  dispatch(actionName: string, props?): Promise<T>;
+  dispatch(actionName: string, props?): OUT;
 
   /**
    * @function subscribe
@@ -107,10 +107,24 @@ export interface Scope<T = any> {
 }
 
 /**
+ * @interface SyncScope
+ * @summary The whole state of your app is stored in an scopes inside a single store.
+ * @description Use this scope type with promises actions.
+ */
+export interface SyncScope<T = any> extends Scope<T, T> {}
+
+/**
+ * @interface AsyncScope
+ * @summary The whole state of your app is stored in an scopes inside a single store.
+ * @description Use this scope type with synced actions.
+ */
+export interface AsyncScope<T = any> extends Scope<T, Promise<T>> {}
+
+/**
  * @interface ScopeMiddleware
  * @summary You can use middleware to use aspect programing.
  */
-export interface ScopeMiddleware<T = any> {
+export interface ScopeMiddleware<T, OUT> {
 
   /**
    * @function postSetup
@@ -118,7 +132,7 @@ export interface ScopeMiddleware<T = any> {
    * @summary You can use this method to setup custom actions in scope or
    * subscribe to actions in scope. Lock scope in this point is bad practice.
    */
-  postSetup(scope: Scope<T>): void;
+  postSetup(scope: Scope<T, OUT>): void;
 
   /**
    * @function appendActionMiddleware
@@ -126,7 +140,7 @@ export interface ScopeMiddleware<T = any> {
    * @param {ScopeAction} action Wrapped action.
    * @return {ScopeAction} Action that wrapped old action
    */
-  appendActionMiddleware(action: ScopeAction<T>): ScopeAction<T>;
+  appendActionMiddleware<IN>(action: ScopeAction<T, IN, OUT>): ScopeAction<T, IN, OUT>;
 
 }
 
@@ -168,20 +182,18 @@ export interface StoreDevTool {
 
 let storeDevTool: StoreDevTool = null;
 
-class ScopeImpl<T = any> implements Scope<T> {
+abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
 
-  private _state: T;
-  private _isFrozen = false;
-  private _actionQueue: (() => void)[] = [];
-  private _actions: { [key: string]: ScopeAction<T> } = {};
-  private _middleware: ScopeMiddleware<T>[] = [];
+  protected _state: T;
+  protected _isFrozen = false;
+  protected _middleware: ScopeMiddleware<T, OUT>[] = [];
+  protected _actions: { [key: string]: ScopeAction<T, any, OUT> } = {};
   protected _listeners: { [key: string]: ScopeListener<T> } = {};
 
-  constructor(readonly name: string, initState: T, middleware: ScopeMiddleware<T>[]) {
+  protected constructor(readonly name: string, initState: T, middleware: ScopeMiddleware<T, OUT>[]) {
     // This code needed to save middleware correct order in dispatch method.
     this._state = initState;
-    this._middleware = [...middleware];
-    this._middleware.reverse();
+    this._middleware = [...middleware].reverse();
   }
 
   get isLocked() {
@@ -196,7 +208,7 @@ class ScopeImpl<T = any> implements Scope<T> {
     return Object.getOwnPropertyNames(this._actions);
   }
 
-  registerAction<P>(actionName: string, action: ScopeAction<T, P>) {
+  registerAction<IN>(actionName: string, action: ScopeAction<T, IN, OUT>) {
     if (this._isFrozen) {
       throw new Error(`This scope is locked you can't add new action.`);
     }
@@ -207,7 +219,7 @@ class ScopeImpl<T = any> implements Scope<T> {
     if (storeDevTool) {
       storeDevTool.onChange(this);
     }
-    const actionDispatcher = (props: P) => {
+    const actionDispatcher = (props: IN) => {
       return this.dispatch(actionName, props);
     };
 
@@ -216,75 +228,7 @@ class ScopeImpl<T = any> implements Scope<T> {
     return actionDispatcher;
   }
 
-  dispatch(actionName: string, props?) {
-    let action: ScopeAction<T> = this._actions[actionName];
-
-    if (!action) {
-      throw new Error(`This action not exists ${actionName}`);
-    }
-
-    if (props && typeof props === 'object') {
-      deepFreeze(props);
-    }
-
-    let oldState;
-
-    const startNextDeferredAction = () => {
-      this._actionQueue.shift();
-      if (this._actionQueue.length > 0) {
-        const deferredAction = this._actionQueue[0];
-        deferredAction();
-      }
-    };
-
-    return new Promise<T>((resolve, reject) => {
-      const isFirstAction = this._actionQueue.length === 0;
-      const deferredAction = () => {
-        oldState = this.state;
-        this._middleware.forEach(
-          middleware => action = middleware.appendActionMiddleware(action)
-        );
-        action(oldState, props, resolve, reject);
-      };
-      this._actionQueue.push(deferredAction);
-      if (isFirstAction) {
-        deferredAction();
-      }
-    }).then(newState => {
-      deepFreeze(newState);
-      const event: ScopeEvent<T> = {
-        oldState,
-        newState,
-        scopeName: this.name,
-        actionName,
-        props
-      };
-      this._state = newState;
-      if (storeDevTool) {
-        storeDevTool.onAction(event);
-        storeDevTool.onChange(this);
-      }
-      Object.getOwnPropertyNames(this._listeners).forEach(key => {
-        const listener = this._listeners[key];
-        if (listener) listener(event);
-      });
-      startNextDeferredAction();
-      return newState;
-    }, reason => {
-      const error: ScopeError<T> = {
-        reason,
-        oldState,
-        scopeName: this.name,
-        actionName,
-        props
-      };
-      if (storeDevTool) {
-        storeDevTool.onActionError(error);
-      }
-      startNextDeferredAction();
-      throw error;
-    });
-  }
+  abstract dispatch(actionName: string, props?): OUT;
 
   subscribe(listener: ScopeListener<T>, actionName?: string | string[]) {
     const actionNames: string[] = [];
@@ -360,12 +304,162 @@ class ScopeImpl<T = any> implements Scope<T> {
 
 }
 
-class ComposeScopeImpl extends ScopeImpl<{}> {
+class SyncScopeImpl<T = any> extends ScopeImpl<T, T> {
+
+  constructor(readonly name: string, initState: T, middleware: ScopeMiddleware<T, T>[]) {
+    super(name, initState, middleware);
+  }
+
+  dispatch(actionName: string, props?) {
+    let action: ScopeAction<T, any, T> = this._actions[actionName];
+
+    if (!action) {
+      throw new Error(`This action not exists ${actionName}`);
+    }
+
+    if (props && typeof props === 'object') {
+      deepFreeze(props);
+    }
+
+    this._middleware.forEach(
+      middleware => action = middleware.appendActionMiddleware(action)
+    );
+
+    const onFulfilled = newState => {
+      deepFreeze(newState);
+      const event: ScopeEvent<T> = {
+        oldState,
+        newState,
+        scopeName: this.name,
+        actionName,
+        props
+      };
+      this._state = newState;
+      if (storeDevTool) {
+        storeDevTool.onAction(event);
+        storeDevTool.onChange(this);
+      }
+      Object.getOwnPropertyNames(this._listeners).forEach(key => {
+        const listener = this._listeners[key];
+        if (listener) listener(event);
+      });
+      return newState;
+    };
+
+    const onRejected = reason => {
+      const error: ScopeError<T> = {
+        reason,
+        oldState,
+        scopeName: this.name,
+        actionName,
+        props
+      };
+      if (storeDevTool) {
+        storeDevTool.onActionError(error);
+      }
+      return error;
+    };
+
+    const oldState = this._state;
+    try {
+      return onFulfilled(action(oldState, props));
+    } catch (e) {
+      throw onRejected(e);
+    }
+  }
+
+}
+
+class AsyncScopeImpl<T = any> extends ScopeImpl<T, Promise<T>> {
+
+  private _actionQueue: (() => void)[] = [];
+
+  constructor(readonly name: string, initState: T, middleware: ScopeMiddleware<T, Promise<T>>[]) {
+    super(name, initState, middleware);
+  }
+
+  dispatch(actionName: string, props?) {
+    let action: ScopeAction<T, any, Promise<T>> = this._actions[actionName];
+
+    if (!action) {
+      throw new Error(`This action not exists ${actionName}`);
+    }
+
+    if (props && typeof props === 'object') {
+      deepFreeze(props);
+    }
+
+    let oldState;
+
+    const startNextDeferredAction = () => {
+      this._actionQueue.shift();
+      if (this._actionQueue.length > 0) {
+        const deferredAction = this._actionQueue[0];
+        deferredAction();
+      }
+    };
+
+    return new Promise<T>((resolve, reject) => {
+      const isFirstAction = this._actionQueue.length === 0;
+      const deferredAction = () => {
+        oldState = this.state;
+        this._middleware.forEach(
+          middleware => action = middleware.appendActionMiddleware(action)
+        );
+        try {
+          resolve(action(oldState, props));
+        } catch (e) {
+          reject(e);
+        }
+      };
+      this._actionQueue.push(deferredAction);
+      if (isFirstAction) {
+        deferredAction();
+      }
+    }).then(newState => {
+      deepFreeze(newState);
+      const event: ScopeEvent<T> = {
+        oldState,
+        newState,
+        scopeName: this.name,
+        actionName,
+        props
+      };
+      this._state = newState;
+      if (storeDevTool) {
+        storeDevTool.onAction(event);
+        storeDevTool.onChange(this);
+      }
+      Object.getOwnPropertyNames(this._listeners).forEach(key => {
+        const listener = this._listeners[key];
+        if (listener) listener(event);
+      });
+      startNextDeferredAction();
+      return newState;
+    }, reason => {
+      const error: ScopeError<T> = {
+        reason,
+        oldState,
+        scopeName: this.name,
+        actionName,
+        props
+      };
+      if (storeDevTool) {
+        storeDevTool.onActionError(error);
+      }
+      startNextDeferredAction();
+      throw error;
+    });
+  }
+
+}
+
+class ComposeScopeImpl extends AsyncScopeImpl<{}> {
 
   constructor(
     readonly name: string,
     private scopes: Scope[],
-    middleware: ScopeMiddleware[]
+    middleware: ScopeMiddleware<{}, Promise<{}>>[]
   ) {
     super(name, {}, middleware);
 
@@ -397,15 +491,13 @@ class ComposeScopeImpl extends ScopeImpl<{}> {
     );
 
     actionNames.forEach(actionName => this.registerAction(
-      actionName, (state, props, resolve, reject) => {
+      actionName, (state, props) => {
         let dispatchPromises = scopes.filter(
           scope => scope.supportActions.findIndex(
             it => it === actionName
           ) >= 0
         ).map(scope => scope.dispatch(actionName, props));
-        Promise.all(dispatchPromises).then(
-          () => resolve(this.state)
-        ).catch(reject);
+        return Promise.all(dispatchPromises).then(() => this.state);
       }
     ));
 
@@ -424,8 +516,31 @@ class ComposeScopeImpl extends ScopeImpl<{}> {
 
 const scopes: { [key: string]: Scope<any> } = {};
 
+function createScope<T>(
+  name = uniqueId('scope'),
+  initState: T = null,
+  middleware: ScopeMiddleware<T, T | Promise<T>>[] = [],
+  type: 'sync' | 'async'
+): Scope<T> {
+  if (name in scopes) {
+    throw new Error(`Scope name must unique`);
+  }
+  let scope: Scope<T>;
+  if (type === "async") {
+    scope = new AsyncScopeImpl<T>(name, initState, middleware as ScopeMiddleware<T, Promise<T>>[]);
+  } else {
+    scope = new SyncScopeImpl<T>(name, initState, middleware as ScopeMiddleware<T, T>[]);
+  }
+  scopes[name] = scope;
+  middleware.forEach(middleware => middleware.postSetup(scope));
+  if (storeDevTool) {
+    storeDevTool.onCreate(scope);
+  }
+  return scope;
+}
+
 /**
- * @function createScope
+ * @function createAsyncScope
  * @summary Create a new scope and return it.
  * @param {string} name The name of scope.
  * @default Generate unique name.
@@ -437,21 +552,25 @@ const scopes: { [key: string]: Scope<any> } = {};
  * @return {Scope} Scope.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export function createScope<T>(
-  name = uniqueId('scope'),
-  initState: T = null,
-  middleware: ScopeMiddleware<T>[] = []
-): Scope<T> {
-  if (name in scopes) {
-    throw new Error(`Scope name must unique`);
-  }
-  const scope = new ScopeImpl<T>(name, initState, middleware);
-  scopes[name] = scope;
-  middleware.forEach(middleware => middleware.postSetup(scope));
-  if (storeDevTool) {
-    storeDevTool.onCreate(scope);
-  }
-  return scope;
+export function createAsyncScope<T>(name?, initState?: T, middleware?: ScopeMiddleware<T, Promise<T>>[]): AsyncScope<T> {
+  return createScope(name, initState, middleware, 'async') as AsyncScope<T>;
+}
+
+/**
+ * @function createSyncScope
+ * @summary Create a new scope and return it.
+ * @param {string} name The name of scope.
+ * @default Generate unique name.
+ * @param {any} initState The initial scope state.
+ * @default Empty object.
+ * @param {ScopeMiddleware[]} middleware The scope middleware.
+ * @description You can use middleware to use aspect programing.
+ * @default Empty array.
+ * @return {Scope} Scope.
+ * @throws {Error} Will throw an error if name of scope not unique.
+ */
+export function createSyncScope<T>(name?, initState?: T, middleware?: ScopeMiddleware<T, T>[]): SyncScope<T> {
+  return createScope(name, initState, middleware, 'sync') as SyncScope<T>;
 }
 
 /**
@@ -471,8 +590,8 @@ export function createScope<T>(
 export function composeScope(
   name: string,
   scopes: (Scope | string)[],
-  middleware: ScopeMiddleware[] = []
-): Scope {
+  middleware: ScopeMiddleware<any, Promise<{}>>[] = []
+): AsyncScope<{}> {
   if (name in scopes) {
     throw new Error(`Scope name must unique`);
   }
@@ -535,4 +654,4 @@ export function setStoreDevTool(devTool: StoreDevTool) {
  * @summary This scope is global
  * @type {Scope}
  */
-export const ROOT_SCOPE = createScope('rootScope', {});
+export const ROOT_SCOPE = createAsyncScope('rootScope', {});

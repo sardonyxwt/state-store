@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import {composeScope, createScope} from "../src";
+import {composeScope, createAsyncScope} from "../src";
 
 describe('ComposeScope', () => {
 
@@ -9,9 +9,9 @@ describe('ComposeScope', () => {
   it('composeScope', () => {
 
     function initScope(name) {
-      const scope = createScope(name);
-      scope.registerAction(ACTION_NAME, (scope, props, resolved) => {
-        resolved(props);
+      const scope = createAsyncScope(name);
+      scope.registerAction(ACTION_NAME, (scope, props) => {
+        return Promise.resolve(props);
       });
       return scope;
     }

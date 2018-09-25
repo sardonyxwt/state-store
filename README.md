@@ -21,111 +21,114 @@ To specify how the actions transform the scope, you write pure *action* and regi
 That's it!
 
 ```js
-import {createScope, composeScope, setStoreDevTool} from '@sardonyxwt/state-store';
+import {createAsyncScope, createSyncScope, composeScope, setStoreDevTool} from '@sardonyxwt/state-store';
 
 const INCREMENT_ACTION = 'increment';
 const DECREMENT_ACTION = 'decrement';
 const SET_COUNTER_ACTION = 'setCounter';
 
-// Scope middleware example
+// Scope middleware example.
 const logScopeMiddleware = {
   postSetup: (scope) => {
     console.log('Scope(' + scope.name + ') with LogScopeMiddleware complete setup.')
   },
   appendActionMiddleware: (action) => {
-    return (state, props, resolve, reject) => {
+    return (state, props) => {
       console.log('Log from LogScopeMiddleware: ', state, props);
-      action(state, props, resolve, reject);
+      return action(state, props);
     }
   }
 };
 
-// Create a new scope
-const counterScope = createScope('counterScope', 0, [logScopeMiddleware]);
+// Create a new async scope.
+const counterAsyncScope = createAsyncScope('counterAsyncScope', 0, [logScopeMiddleware]);
 
-// Registers a new action in COUNTER_SCOPE
-counterScope.registerAction(
+// Create a new sync scope.
+const counterSyncScope = createAsyncScope('counterScope', 0, [logScopeMiddleware]);
+
+// Registers a new action in COUNTER_SCOPE.
+counterAsyncScope.registerAction(
   INCREMENT_ACTION,
-  (scope, props, resolved) => resolved(scope + 1)
+  (scope, props) => Promise.resolve(scope + 1)
 );
 
-counterScope.registerAction(
+counterAsyncScope.registerAction(
   DECREMENT_ACTION,
-  (scope, props, resolved) => resolved(scope - 1),
+  (scope, props) => Promise.resolve(scope - 1),
 );
 
 // You can save action dispatcher and call later.
-const actionDispatcher = counterScope.registerAction(
+const setCouterActionDispatcher = counterAsyncScope.registerAction(
   SET_COUNTER_ACTION,
-  (scope, props, resolved, rejected) => {
+  (scope, props) => {
     if(typeof props !== 'number') {
-      rejected(new Error('Props is not number'));
+      throw new Error('Props is not number');
     }
-    resolved(props);
+    return Promise.resolve(props);
   }
 );
 
 // You can use lock() to forbid add new action to scope.
-counterScope.lock();
+counterAsyncScope.lock();
 
 // You can use isLocked to check is scope is lock.
-counterScope.isLocked;
+console.log(counterAsyncScope.isLocked);
 
 // You can use subscribe() to update the UI in response to state changes.
-let allActionListenerId = counterScope.subscribe(
+let allActionListenerId = counterAsyncScope.subscribe(
   ({oldScope, newScope, scopeName, actionName, props}) => {
     console.log(oldScope, newScope, scopeName, actionName, props)
   }
 );
 
 // You can use subscribe() with specific actionName (you can use array of actions) to handle only this action.
-let setCounterActionListenerId = counterScope.subscribe(
+let setCounterActionListenerId = counterAsyncScope.subscribe(
   () => console.log('set counter value action dispatch.'),
   SET_COUNTER_ACTION
 );
 
-let syncObject1, syncObject2;
+let syncObject1 = {}, syncObject2 = {};
 
 // You can use synchronize() to synchronize the object with scope state.
-let synchronizeObject1Id = counterScope.synchronize(syncObject1, 'state');
+let synchronizeObject1Id = counterAsyncScope.synchronize(syncObject1, 'state');
 
 // You can use synchronize() with specific actionName to handle only this action.
-let synchronizeObject2Id = counterScope.synchronize(syncObject2, 'state', INCREMENT_ACTION);
+let synchronizeObject2Id = counterAsyncScope.synchronize(syncObject2, 'state', INCREMENT_ACTION);
 
 // The only way to mutate the internal state in scope is to dispatch an action.
-counterScope.dispatch(INCREMENT_ACTION);
-counterScope.dispatch(DECREMENT_ACTION);
+counterAsyncScope.dispatch(INCREMENT_ACTION);
+counterAsyncScope.dispatch(DECREMENT_ACTION);
 
-counterScope.dispatch(SET_COUNTER_ACTION, 1000)
+counterAsyncScope.dispatch(SET_COUNTER_ACTION, 1000)
   .then(newScope => console.log(newScope));
 
-counterScope.dispatch(SET_COUNTER_ACTION, "invalid props")
+counterAsyncScope.dispatch(SET_COUNTER_ACTION, "invalid props")
   .catch(err => console.log(err));
 
 // dispatch action with action dispatcher.
-actionDispatcher(1000);
+setCouterActionDispatcher(1000);
 // or you can call action dispatcher like this.
 // The method name is the same as the action name.
-counterScope.setCounter(2000);
+counterAsyncScope.setCounter(2000);
 
-counterScope.unsubscribe(allActionListenerId);
-counterScope.unsubscribe(setCounterActionListenerId);
-counterScope.unsubscribe(synchronizeObject1Id);
-counterScope.unsubscribe(synchronizeObject2Id);
+counterAsyncScope.unsubscribe(allActionListenerId);
+counterAsyncScope.unsubscribe(setCounterActionListenerId);
+counterAsyncScope.unsubscribe(synchronizeObject1Id);
+counterAsyncScope.unsubscribe(synchronizeObject2Id);
 
-console.log(counterScope.state);
+console.log(counterAsyncScope.state);
 
 // You can use getSupportActions to get supported actions of scope.
-console.log(counterScope.supportActions);
+console.log(counterAsyncScope.supportActions);
 
 // You can use composeScope to create compose scope.
-const composedScope = composeScope('ComposeScope', [counterScope, ROOT_SCOPE]);
+const composedScope = composeScope('ComposeScope', [counterAsyncScope, ROOT_SCOPE]);
 
 composedScope.dispatch(SET_COUNTER_ACTION, 2000);
 
 console.log(composedScope.state);
 
-// You can use setStoreDevTool to set middleware dev tool
+// You can use setStoreDevTool to set middleware dev tool.
 setStoreDevTool({
   //Call when created new scope.
   onCreate(scope) {
