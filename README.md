@@ -66,6 +66,10 @@ const setCouterActionDispatcher = counterAsyncScope.registerAction(
     }
     return Promise.resolve(props);
   }
+  /*
+  * You can use actionResultTransformer to change result value it only affect in action dispatcher.
+  * , actionResult => actionResult + 10000
+  * */
 );
 
 // You can use lock() to forbid add new action to scope.

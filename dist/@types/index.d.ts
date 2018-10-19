@@ -14,6 +14,7 @@ export declare type ScopeError<T = any> = {
 };
 export declare type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export declare type ScopeAction<T, IN, OUT> = (state: T, props: IN) => OUT;
+export declare type ScopeActionResultTransformer<OUT, TRANSFORMED_OUT> = (actionResult: OUT) => TRANSFORMED_OUT;
 export declare type ScopeActionDispatcher<T, IN, OUT> = (props: IN) => OUT;
 /**
  * @interface Scope
@@ -46,12 +47,13 @@ export interface Scope<T = any, OUT = any> {
      * @summary Registers a new action in scope.
      * @param {string} name The action name.
      * @param {ScopeAction} action The action that changes the state of scope.
+     * @param {ScopeActionResultTransformer} transformer The transformer change returned result.
      * @return {ScopeActionDispatcher} Return action dispatcher.
      * You can use it to dispatch action without call scope.dispatch.
      * @throws {Error} Will throw an error if the scope locked or action name exists in scope
      * when it is called.
      */
-    registerAction<IN>(name: string, action: ScopeAction<T, IN, OUT>): ScopeActionDispatcher<T, IN, OUT>;
+    registerAction<IN, TRANSFORMED_OUT = OUT>(name: string, action: ScopeAction<T, IN, OUT>, transformer?: ScopeActionResultTransformer<OUT, TRANSFORMED_OUT>): ScopeActionDispatcher<T, IN, TRANSFORMED_OUT>;
     /**
      * @function dispatch
      * @summary Dispatches an action.

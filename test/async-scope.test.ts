@@ -24,7 +24,7 @@ describe('Scope', () => {
   it('lock', () => {
     scope.lock();
     try {
-      scope.registerAction('freezeTest', (scope) => scope);
+      scope.registerAction('freezeTest', scope => Promise.resolve(scope));
     } catch (err) {
       expect(err).toBeTruthy();
     }

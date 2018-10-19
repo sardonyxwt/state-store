@@ -5,6 +5,7 @@ export type ScopeEvent<T = any> = { newState: T, oldState: T, scopeName: string,
 export type ScopeError<T = any> = { reason, oldState: T, scopeName: string, actionName: string, props };
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export type ScopeAction<T, IN, OUT> = (state: T, props: IN) => OUT;
+export type ScopeActionResultTransformer<OUT, TRANSFORMED_OUT> = (actionResult: OUT) => TRANSFORMED_OUT;
 export type ScopeActionDispatcher<T, IN, OUT> = (props: IN) => OUT;
 
 /**
@@ -43,12 +44,17 @@ export interface Scope<T = any, OUT = any> {
    * @summary Registers a new action in scope.
    * @param {string} name The action name.
    * @param {ScopeAction} action The action that changes the state of scope.
+   * @param {ScopeActionResultTransformer} transformer The transformer change returned result.
    * @return {ScopeActionDispatcher} Return action dispatcher.
    * You can use it to dispatch action without call scope.dispatch.
    * @throws {Error} Will throw an error if the scope locked or action name exists in scope
    * when it is called.
    */
-  registerAction<IN>(name: string, action: ScopeAction<T, IN, OUT>): ScopeActionDispatcher<T, IN, OUT>;
+  registerAction<IN, TRANSFORMED_OUT = OUT>(
+    name: string,
+    action: ScopeAction<T, IN, OUT>,
+    transformer?: ScopeActionResultTransformer<OUT, TRANSFORMED_OUT>
+  ): ScopeActionDispatcher<T, IN, TRANSFORMED_OUT>;
 
   /**
    * @function dispatch
@@ -208,7 +214,15 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
     return Object.getOwnPropertyNames(this._actions);
   }
 
-  registerAction<IN>(actionName: string, action: ScopeAction<T, IN, OUT>) {
+  registerAction<IN, TRANSFORMED_OUT = OUT>(
+    actionName: string,
+    action: ScopeAction<T, IN, OUT>,
+    transformer: ScopeActionResultTransformer<OUT, TRANSFORMED_OUT>
+      = actionResult => <TRANSFORMED_OUT>(actionResult as any)
+  ) {
+    if (!transformer) {
+      throw new Error(`Transformer cannot be null or undefined.`);
+    }
     if (this._isFrozen) {
       throw new Error(`This scope is locked you can't add new action.`);
     }
@@ -219,8 +233,9 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
     if (storeDevTool) {
       storeDevTool.onChange(this);
     }
+
     const actionDispatcher = (props: IN) => {
-      return this.dispatch(actionName, props);
+      return transformer(this.dispatch(actionName, props));
     };
 
     this[actionName] = actionDispatcher;
