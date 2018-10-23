@@ -72,6 +72,15 @@ const setCouterActionDispatcher = counterAsyncScope.registerAction(
   * */
 );
 
+// You can add macro as it and call later.
+counterAsyncScope.registerMacro('remains', (props, state) => {
+  const remains = props - state;
+  if (remains < 0) {
+    return 0;
+  }
+  return remains;
+});
+
 // You can use lock() to forbid add new action to scope.
 counterAsyncScope.lock();
 
@@ -111,9 +120,13 @@ counterAsyncScope.dispatch(SET_COUNTER_ACTION, "invalid props")
 
 // dispatch action with action dispatcher.
 setCouterActionDispatcher(1000);
+
 // or you can call action dispatcher like this.
 // The method name is the same as the action name.
 counterAsyncScope.setCounter(2000);
+
+// call remains macro.
+console.log(counterAsyncScope.remains(10000));
 
 counterAsyncScope.unsubscribe(allActionListenerId);
 counterAsyncScope.unsubscribe(setCounterActionListenerId);

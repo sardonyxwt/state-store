@@ -21,6 +21,13 @@ describe('Scope', () => {
     });
   });
 
+  it('registerTransformer', () => {
+    scope.registerMacro('sum', (props, state) => {
+      return props + state;
+    });
+    expect(scope['sum'](2000)).toEqual(TEST_VALUE + 1000);
+  });
+
   it('lock', () => {
     scope.lock();
     try {

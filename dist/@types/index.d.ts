@@ -14,6 +14,7 @@ export declare type ScopeError<T = any> = {
 };
 export declare type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export declare type ScopeAction<T, IN, OUT> = (state: T, props: IN) => OUT;
+export declare type ScopeMacro<T, IN, OUT> = (props: IN, state: T) => OUT;
 export declare type ScopeActionResultTransformer<OUT, TRANSFORMED_OUT> = (actionResult: OUT) => TRANSFORMED_OUT;
 export declare type ScopeActionDispatcher<T, IN, OUT> = (props: IN) => OUT;
 /**
@@ -45,7 +46,7 @@ export interface Scope<T = any, OUT = any> {
     /**
      * @function registerAction
      * @summary Registers a new action in scope.
-     * @param {string} name The action name.
+     * @param {string} actionName The action name.
      * @param {ScopeAction} action The action that changes the state of scope.
      * @param {ScopeActionResultTransformer} transformer The transformer change returned result.
      * @return {ScopeActionDispatcher} Return action dispatcher.
@@ -53,7 +54,15 @@ export interface Scope<T = any, OUT = any> {
      * @throws {Error} Will throw an error if the scope locked or action name exists in scope
      * when it is called.
      */
-    registerAction<IN, TRANSFORMED_OUT = OUT>(name: string, action: ScopeAction<T, IN, OUT>, transformer?: ScopeActionResultTransformer<OUT, TRANSFORMED_OUT>): ScopeActionDispatcher<T, IN, TRANSFORMED_OUT>;
+    registerAction<IN, TRANSFORMED_OUT = OUT>(actionName: string, action: ScopeAction<T, IN, OUT>, transformer?: ScopeActionResultTransformer<OUT, TRANSFORMED_OUT>): ScopeActionDispatcher<T, IN, TRANSFORMED_OUT>;
+    /**
+     * @function registerMacro
+     * @summary Registers a new macro in scope.
+     * @param {string} macroName The transformer name.
+     * @param {ScopeMacro} macro The transformer used to add getter macros to scope.
+     * @throws {Error} Will throw an error if macro name exists in scope.
+     */
+    registerMacro<IN, OUT>(macroName: string, macro: ScopeMacro<T, IN, OUT>): any;
     /**
      * @function dispatch
      * @summary Dispatches an action.

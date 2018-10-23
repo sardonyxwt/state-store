@@ -5,6 +5,7 @@ export type ScopeEvent<T = any> = { newState: T, oldState: T, scopeName: string,
 export type ScopeError<T = any> = { reason, oldState: T, scopeName: string, actionName: string, props };
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export type ScopeAction<T, IN, OUT> = (state: T, props: IN) => OUT;
+export type ScopeMacro<T, IN, OUT> = (props: IN, state: T) => OUT;
 export type ScopeActionResultTransformer<OUT, TRANSFORMED_OUT> = (actionResult: OUT) => TRANSFORMED_OUT;
 export type ScopeActionDispatcher<T, IN, OUT> = (props: IN) => OUT;
 
@@ -42,7 +43,7 @@ export interface Scope<T = any, OUT = any> {
   /**
    * @function registerAction
    * @summary Registers a new action in scope.
-   * @param {string} name The action name.
+   * @param {string} actionName The action name.
    * @param {ScopeAction} action The action that changes the state of scope.
    * @param {ScopeActionResultTransformer} transformer The transformer change returned result.
    * @return {ScopeActionDispatcher} Return action dispatcher.
@@ -51,10 +52,22 @@ export interface Scope<T = any, OUT = any> {
    * when it is called.
    */
   registerAction<IN, TRANSFORMED_OUT = OUT>(
-    name: string,
+    actionName: string,
     action: ScopeAction<T, IN, OUT>,
     transformer?: ScopeActionResultTransformer<OUT, TRANSFORMED_OUT>
   ): ScopeActionDispatcher<T, IN, TRANSFORMED_OUT>;
+
+  /**
+   * @function registerMacro
+   * @summary Registers a new macro in scope.
+   * @param {string} macroName The transformer name.
+   * @param {ScopeMacro} macro The transformer used to add getter macros to scope.
+   * @throws {Error} Will throw an error if macro name exists in scope.
+   */
+  registerMacro<IN, OUT>(
+    macroName: string,
+    macro: ScopeMacro<T, IN, OUT>
+  );
 
   /**
    * @function dispatch
@@ -227,7 +240,7 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
       throw new Error(`This scope is locked you can't add new action.`);
     }
     if (actionName in this._actions || actionName in this) {
-      throw new Error(`Action name ${actionName} is duplicate in scope ${this.name} or is reserved in scope`);
+      throw new Error(`Action name ${actionName} is duplicate or reserved in scope ${this.name}.`);
     }
     this._actions[actionName] = action;
     if (storeDevTool) {
@@ -241,6 +254,15 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
     this[actionName] = actionDispatcher;
 
     return actionDispatcher;
+  }
+
+  registerMacro<IN, OUT>(macroName: string, macro: ScopeMacro<T, IN, OUT>) {
+    if (macroName in this) {
+      throw new Error(`Macro name ${macroName} is reserved in scope ${this.name}.`);
+    }
+    this[macroName] = (props: IN) => {
+      return macro(props, this._state);
+    };
   }
 
   abstract dispatch(actionName: string, props?): OUT;
