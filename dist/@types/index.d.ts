@@ -60,7 +60,8 @@ export interface Scope<T = any, OUT = any> {
      * @summary Registers a new macro in scope.
      * @param {string} macroName The transformer name.
      * @param {ScopeMacro} macro The transformer used to add getter macros to scope.
-     * @throws {Error} Will throw an error if macro name exists in scope.
+     * @throws {Error} Will throw an error if the scope locked or macro name exists in scope
+     * when it is called.
      */
     registerMacro<IN, OUT>(macroName: string, macro: ScopeMacro<T, IN, OUT>): any;
     /**

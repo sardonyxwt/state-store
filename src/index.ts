@@ -62,7 +62,8 @@ export interface Scope<T = any, OUT = any> {
    * @summary Registers a new macro in scope.
    * @param {string} macroName The transformer name.
    * @param {ScopeMacro} macro The transformer used to add getter macros to scope.
-   * @throws {Error} Will throw an error if macro name exists in scope.
+   * @throws {Error} Will throw an error if the scope locked or macro name exists in scope
+   * when it is called.
    */
   registerMacro<IN, OUT>(
     macroName: string,
@@ -257,6 +258,12 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
   }
 
   registerMacro<IN, OUT>(macroName: string, macro: ScopeMacro<T, IN, OUT>) {
+    if (!macro) {
+      throw new Error(`Macro cannot be null or undefined.`);
+    }
+    if (this._isFrozen) {
+      throw new Error(`This scope is locked you can't add new macro.`);
+    }
     if (macroName in this) {
       throw new Error(`Macro name ${macroName} is reserved in scope ${this.name}.`);
     }
