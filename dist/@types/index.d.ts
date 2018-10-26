@@ -14,9 +14,14 @@ export declare type ScopeError<T = any> = {
 };
 export declare type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export declare type ScopeAction<T, IN, OUT> = (state: T, props: IN) => OUT;
-export declare type ScopeMacro<T, IN, OUT> = (props: IN, state: T) => OUT;
+export declare type ScopeMacro<T, IN, OUT> = (state: T, props?: IN) => OUT;
 export declare type ScopeActionResultTransformer<OUT, TRANSFORMED_OUT> = (actionResult: OUT) => TRANSFORMED_OUT;
 export declare type ScopeActionDispatcher<T, IN, OUT> = (props: IN) => OUT;
+export declare enum ScopeMacroType {
+    GETTER = "GETTER",
+    SETTER = "SETTER",
+    FUNCTION = "FUNCTION",
+}
 /**
  * @interface Scope
  * @summary The whole state of your app is stored in an scopes inside a single store.
@@ -60,10 +65,11 @@ export interface Scope<T = any, OUT = any> {
      * @summary Registers a new macro in scope.
      * @param {string} macroName The transformer name.
      * @param {ScopeMacro} macro The transformer used to add getter macros to scope.
+     * @param {ScopeMacroType} macroType Register macro type.
      * @throws {Error} Will throw an error if the scope locked or macro name exists in scope
      * when it is called.
      */
-    registerMacro<IN, OUT>(macroName: string, macro: ScopeMacro<T, IN, OUT>): any;
+    registerMacro<IN, OUT>(macroName: string, macro: ScopeMacro<T, IN, OUT>, macroType?: ScopeMacroType): any;
     /**
      * @function dispatch
      * @summary Dispatches an action.

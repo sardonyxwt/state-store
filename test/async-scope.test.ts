@@ -16,13 +16,13 @@ describe('Scope', () => {
   });
 
   it('registerAction', () => {
-    scope.registerAction(ACTION_NAME, (scope, props) => {
+    scope.registerAction(ACTION_NAME, (state, props) => {
       return Promise.resolve(props);
     });
   });
 
   it('registerTransformer', () => {
-    scope.registerMacro('sum', (props, state) => {
+    scope.registerMacro('sum', (state, props) => {
       return props + state;
     });
     expect(scope['sum'](2000)).toEqual(TEST_VALUE + 1000);
@@ -31,7 +31,7 @@ describe('Scope', () => {
   it('lock', () => {
     scope.lock();
     try {
-      scope.registerAction('freezeTest', scope => Promise.resolve(scope));
+      scope.registerAction('freezeTest', state => Promise.resolve(state));
     } catch (err) {
       expect(err).toBeTruthy();
     }
@@ -52,8 +52,8 @@ describe('Scope', () => {
   });
 
   it('dispatch', () => {
-    scope.dispatch(ACTION_NAME, TEST_VALUE).then(newScope => {
-      expect(newScope).toEqual(TEST_VALUE);
+    scope.dispatch(ACTION_NAME, TEST_VALUE).then(newState => {
+      expect(newState).toEqual(TEST_VALUE);
     });
   });
 

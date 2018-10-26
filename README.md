@@ -73,13 +73,18 @@ const setCouterActionDispatcher = counterAsyncScope.registerAction(
 );
 
 // You can add macro as it and call later.
-counterAsyncScope.registerMacro('remains', (props, state) => {
+counterAsyncScope.registerMacro('remains', (state, props) => {
   const remains = props - state;
   if (remains < 0) {
     return 0;
   }
   return remains;
 });
+
+// You can add macro as getter or setter type.
+counterAsyncScope.registerMacro('count', (state) => {
+  return state;
+}, 'GETTER');
 
 // You can use lock() to forbid add new action to scope.
 counterAsyncScope.lock();
@@ -128,12 +133,16 @@ counterAsyncScope.setCounter(2000);
 // call remains macro.
 console.log(counterAsyncScope.remains(10000));
 
+// call getter count macro.
+console.log(counterAsyncScope.count);
+
 counterAsyncScope.unsubscribe(allActionListenerId);
 counterAsyncScope.unsubscribe(setCounterActionListenerId);
 counterAsyncScope.unsubscribe(synchronizeObject1Id);
 counterAsyncScope.unsubscribe(synchronizeObject2Id);
 
 console.log(counterAsyncScope.state);
+
 
 // You can use getSupportActions to get supported actions of scope.
 console.log(counterAsyncScope.supportActions);

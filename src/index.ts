@@ -5,9 +5,15 @@ export type ScopeEvent<T = any> = { newState: T, oldState: T, scopeName: string,
 export type ScopeError<T = any> = { reason, oldState: T, scopeName: string, actionName: string, props };
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export type ScopeAction<T, IN, OUT> = (state: T, props: IN) => OUT;
-export type ScopeMacro<T, IN, OUT> = (props: IN, state: T) => OUT;
+export type ScopeMacro<T, IN, OUT> = (state: T, props?: IN) => OUT;
 export type ScopeActionResultTransformer<OUT, TRANSFORMED_OUT> = (actionResult: OUT) => TRANSFORMED_OUT;
 export type ScopeActionDispatcher<T, IN, OUT> = (props: IN) => OUT;
+
+export enum ScopeMacroType {
+  GETTER = 'GETTER',
+  SETTER = 'SETTER',
+  FUNCTION = 'FUNCTION',
+}
 
 /**
  * @interface Scope
@@ -62,12 +68,14 @@ export interface Scope<T = any, OUT = any> {
    * @summary Registers a new macro in scope.
    * @param {string} macroName The transformer name.
    * @param {ScopeMacro} macro The transformer used to add getter macros to scope.
+   * @param {ScopeMacroType} macroType Register macro type.
    * @throws {Error} Will throw an error if the scope locked or macro name exists in scope
    * when it is called.
    */
   registerMacro<IN, OUT>(
     macroName: string,
-    macro: ScopeMacro<T, IN, OUT>
+    macro: ScopeMacro<T, IN, OUT>,
+    macroType?: ScopeMacroType
   );
 
   /**
@@ -257,7 +265,11 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
     return actionDispatcher;
   }
 
-  registerMacro<IN, OUT>(macroName: string, macro: ScopeMacro<T, IN, OUT>) {
+  registerMacro<IN, OUT>(
+    macroName: string,
+    macro: ScopeMacro<T, IN, OUT>,
+    macroType: ScopeMacroType = ScopeMacroType.FUNCTION
+  ) {
     if (!macro) {
       throw new Error(`Macro cannot be null or undefined.`);
     }
@@ -267,9 +279,20 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
     if (macroName in this) {
       throw new Error(`Macro name ${macroName} is reserved in scope ${this.name}.`);
     }
-    this[macroName] = (props: IN) => {
-      return macro(props, this._state);
+    const macroFunc = (props?: IN) => {
+      return macro(this._state, props);
     };
+    switch (macroType) {
+      case ScopeMacroType.FUNCTION:
+        this[macroName] = macroFunc;
+        break;
+      case ScopeMacroType.GETTER:
+        Object.defineProperty(this, 'macroName', {get: macroFunc});
+        break;
+      case ScopeMacroType.SETTER:
+        Object.defineProperty(this, 'macroName', {set: macroFunc});
+        break;
+    }
   }
 
   abstract dispatch(actionName: string, props?): OUT;

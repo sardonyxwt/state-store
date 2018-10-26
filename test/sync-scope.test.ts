@@ -16,13 +16,13 @@ describe('Scope', () => {
   });
 
   it('registerAction', () => {
-    scope.registerAction(ACTION_NAME, (scope, props: number) => {
+    scope.registerAction(ACTION_NAME, (state, props: number) => {
       return props;
     });
   });
 
   it('registerTransformer', () => {
-    scope.registerMacro('sum', (props, state) => {
+    scope.registerMacro('sum', (state, props) => {
       return props + state;
     });
     expect(scope['sum'](2000)).toEqual(TEST_VALUE + 1000);
@@ -31,7 +31,7 @@ describe('Scope', () => {
   it('lock', () => {
     scope.lock();
     try {
-      scope.registerAction('freezeTest', (scope) => scope);
+      scope.registerAction('freezeTest', (state) => state);
     } catch (err) {
       expect(err).toBeTruthy();
     }
