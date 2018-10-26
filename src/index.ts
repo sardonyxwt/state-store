@@ -212,16 +212,22 @@ let storeDevTool: StoreDevTool = null;
 
 abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
 
+  protected _name: string;
   protected _state: T;
   protected _isFrozen = false;
   protected _middleware: ScopeMiddleware<T, OUT>[] = [];
   protected _actions: { [key: string]: ScopeAction<T, any, OUT> } = {};
   protected _listeners: { [key: string]: ScopeListener<T> } = {};
 
-  protected constructor(readonly name: string, initState: T, middleware: ScopeMiddleware<T, OUT>[]) {
+  protected constructor(name: string, initState: T, middleware: ScopeMiddleware<T, OUT>[]) {
     // This code needed to save middleware correct order in dispatch method.
+    this._name = name;
     this._state = initState;
     this._middleware = [...middleware].reverse();
+  }
+
+  get name() {
+    return this._name;
   }
 
   get isLocked() {
@@ -249,7 +255,7 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
       throw new Error(`This scope is locked you can't add new action.`);
     }
     if (actionName in this._actions || actionName in this) {
-      throw new Error(`Action name ${actionName} is duplicate or reserved in scope ${this.name}.`);
+      throw new Error(`Action name ${actionName} is duplicate or reserved in scope ${this._name}.`);
     }
     this._actions[actionName] = action;
     if (storeDevTool) {
@@ -280,7 +286,7 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
       && (macroType === ScopeMacroType.FUNCTION
         || macroType === ScopeMacroType.GETTER && Object.getOwnPropertyDescriptor(this, macroName).get
         || macroType === ScopeMacroType.SETTER && Object.getOwnPropertyDescriptor(this, macroName).set)) {
-      throw new Error(`Macro name ${macroName} is reserved in scope ${this.name}.`);
+      throw new Error(`Macro name ${macroName} is reserved in scope ${this._name}.`);
     }
     const macroFunc = (props?: IN) => {
       return macro(this._state, props);
@@ -400,7 +406,7 @@ class SyncScopeImpl<T = any> extends ScopeImpl<T, T> {
       const event: ScopeEvent<T> = {
         oldState,
         newState,
-        scopeName: this.name,
+        scopeName: this._name,
         actionName,
         props
       };
@@ -420,7 +426,7 @@ class SyncScopeImpl<T = any> extends ScopeImpl<T, T> {
       const error: ScopeError<T> = {
         reason,
         oldState,
-        scopeName: this.name,
+        scopeName: this._name,
         actionName,
         props
       };
@@ -491,7 +497,7 @@ class AsyncScopeImpl<T = any> extends ScopeImpl<T, Promise<T>> {
       const event: ScopeEvent<T> = {
         oldState,
         newState,
-        scopeName: this.name,
+        scopeName: this._name,
         actionName,
         props
       };
@@ -510,7 +516,7 @@ class AsyncScopeImpl<T = any> extends ScopeImpl<T, Promise<T>> {
       const error: ScopeError<T> = {
         reason,
         oldState,
-        scopeName: this.name,
+        scopeName: this._name,
         actionName,
         props
       };
