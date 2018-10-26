@@ -290,10 +290,10 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
         this[macroName] = macroFunc;
         break;
       case ScopeMacroType.GETTER:
-        Object.defineProperty(this, 'macroName', {get: macroFunc, configurable: true, enumerable: true});
+        Object.defineProperty(this, macroName, {get: macroFunc, configurable: true, enumerable: true});
         break;
       case ScopeMacroType.SETTER:
-        Object.defineProperty(this, 'macroName', {set: macroFunc, configurable: true, enumerable: true});
+        Object.defineProperty(this, macroName, {set: macroFunc, configurable: true, enumerable: true});
         break;
     }
   }
