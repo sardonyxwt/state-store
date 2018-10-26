@@ -212,7 +212,7 @@ let storeDevTool: StoreDevTool = null;
 
 abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
 
-  protected _name: string;
+  protected readonly _name: string;
   protected _state: T;
   protected _isFrozen = false;
   protected _middleware: ScopeMiddleware<T, OUT>[] = [];
@@ -382,7 +382,7 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
 
 class SyncScopeImpl<T = any> extends ScopeImpl<T, T> {
 
-  constructor(readonly name: string, initState: T, middleware: ScopeMiddleware<T, T>[]) {
+  constructor(name: string, initState: T, middleware: ScopeMiddleware<T, T>[]) {
     super(name, initState, middleware);
   }
 
@@ -450,7 +450,7 @@ class AsyncScopeImpl<T = any> extends ScopeImpl<T, Promise<T>> {
 
   private _actionQueue: (() => void)[] = [];
 
-  constructor(readonly name: string, initState: T, middleware: ScopeMiddleware<T, Promise<T>>[]) {
+  constructor(name: string, initState: T, middleware: ScopeMiddleware<T, Promise<T>>[]) {
     super(name, initState, middleware);
   }
 
@@ -532,12 +532,16 @@ class AsyncScopeImpl<T = any> extends ScopeImpl<T, Promise<T>> {
 
 class ComposeScopeImpl extends AsyncScopeImpl<{}> {
 
+  private readonly _scopes: Scope[];
+
   constructor(
-    readonly name: string,
-    private scopes: Scope[],
+    name: string,
+    scopes: Scope[],
     middleware: ScopeMiddleware<{}, Promise<{}>>[]
   ) {
     super(name, {}, middleware);
+
+    this._scopes = scopes;
 
     if (this.isLocked) {
       throw new Error('You can not use middleware that lock scope to create a composite scope.');
@@ -583,7 +587,7 @@ class ComposeScopeImpl extends AsyncScopeImpl<{}> {
   get state(): {} {
     let state = {};
 
-    this.scopes.forEach(scope => state[scope.name] = scope.state);
+    this._scopes.forEach(scope => state[scope.name] = scope.state);
 
     return state;
   }
