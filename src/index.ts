@@ -276,7 +276,10 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
     if (this._isFrozen) {
       throw new Error(`This scope is locked you can't add new macro.`);
     }
-    if (macroName in this) {
+    if (macroName in this
+      && (macroType === ScopeMacroType.FUNCTION
+        || macroType === ScopeMacroType.GETTER && Object.getOwnPropertyDescriptor(this, macroName).get
+        || macroType === ScopeMacroType.SETTER && Object.getOwnPropertyDescriptor(this, macroName).set)) {
       throw new Error(`Macro name ${macroName} is reserved in scope ${this.name}.`);
     }
     const macroFunc = (props?: IN) => {
@@ -287,10 +290,10 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
         this[macroName] = macroFunc;
         break;
       case ScopeMacroType.GETTER:
-        Object.defineProperty(this, 'macroName', {get: macroFunc});
+        Object.defineProperty(this, 'macroName', {get: macroFunc, configurable: true, enumerable: true});
         break;
       case ScopeMacroType.SETTER:
-        Object.defineProperty(this, 'macroName', {set: macroFunc});
+        Object.defineProperty(this, 'macroName', {set: macroFunc, configurable: true, enumerable: true});
         break;
     }
   }
