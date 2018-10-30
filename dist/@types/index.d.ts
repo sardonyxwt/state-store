@@ -37,7 +37,7 @@ export declare type ScopeError<T = any> = {
 export declare type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export declare type ScopeAction<T, IN, OUT> = (state: T, props: IN) => OUT;
 export declare type ScopeMacro<T, IN, OUT> = (state: T, props?: IN) => OUT;
-export declare type ScopeActionResultTransformer<OUT, TRANSFORMED_OUT> = (actionResult: OUT) => TRANSFORMED_OUT;
+export declare type ScopeActionResultTransformer<IN, OUT, TRANSFORMED_OUT> = (actionResult: OUT, props: IN) => TRANSFORMED_OUT;
 export declare type ScopeActionDispatcher<T, IN, OUT> = (props: IN) => OUT;
 export declare enum ScopeMacroType {
     GETTER = "GETTER",
@@ -86,7 +86,7 @@ export interface Scope<T = any, OUT = any> {
      * @throws {Error} Will throw an error if the scope locked or action name exists in scope
      * when it is called.
      */
-    registerAction<IN, TRANSFORMED_OUT = OUT>(actionName: string, action: ScopeAction<T, IN, OUT>, transformer?: ScopeActionResultTransformer<OUT, TRANSFORMED_OUT>): ScopeActionDispatcher<T, IN, TRANSFORMED_OUT>;
+    registerAction<IN, TRANSFORMED_OUT = OUT>(actionName: string, action: ScopeAction<T, IN, OUT>, transformer?: ScopeActionResultTransformer<IN, OUT, TRANSFORMED_OUT>): ScopeActionDispatcher<T, IN, TRANSFORMED_OUT>;
     /**
      * @function registerMacro
      * @summary Registers a new macro in scope.

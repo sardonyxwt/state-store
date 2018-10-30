@@ -22,7 +22,7 @@ export type ScopeError<T = any> = { reason, oldState: T, scopeName: string, acti
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export type ScopeAction<T, IN, OUT> = (state: T, props: IN) => OUT;
 export type ScopeMacro<T, IN, OUT> = (state: T, props?: IN) => OUT;
-export type ScopeActionResultTransformer<OUT, TRANSFORMED_OUT> = (actionResult: OUT) => TRANSFORMED_OUT;
+export type ScopeActionResultTransformer<IN, OUT, TRANSFORMED_OUT> = (actionResult: OUT, props: IN) => TRANSFORMED_OUT;
 export type ScopeActionDispatcher<T, IN, OUT> = (props: IN) => OUT;
 
 export enum ScopeMacroType {
@@ -82,7 +82,7 @@ export interface Scope<T = any, OUT = any> {
   registerAction<IN, TRANSFORMED_OUT = OUT>(
     actionName: string,
     action: ScopeAction<T, IN, OUT>,
-    transformer?: ScopeActionResultTransformer<OUT, TRANSFORMED_OUT>
+    transformer?: ScopeActionResultTransformer<IN, OUT, TRANSFORMED_OUT>
   ): ScopeActionDispatcher<T, IN, TRANSFORMED_OUT>;
 
   /**
@@ -275,7 +275,7 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
   registerAction<IN, TRANSFORMED_OUT = OUT>(
     actionName: string,
     action: ScopeAction<T, IN, OUT>,
-    transformer: ScopeActionResultTransformer<OUT, TRANSFORMED_OUT>
+    transformer: ScopeActionResultTransformer<IN, OUT, TRANSFORMED_OUT>
       = actionResult => <TRANSFORMED_OUT>(actionResult as any)
   ) {
     if (!transformer) {
@@ -293,7 +293,7 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
     }
 
     const actionDispatcher = (props: IN) => {
-      return transformer(this.dispatch(actionName, props));
+      return transformer(this.dispatch(actionName, props), props);
     };
 
     if (this._isSubscribeMacroAutoCreateEnable) {

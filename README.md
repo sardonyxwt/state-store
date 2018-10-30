@@ -76,7 +76,7 @@ const setCouterActionDispatcher = counterAsyncScope.registerAction(
   }
   /*
   * You can use actionResultTransformer to change result value it only affect in action dispatcher.
-  * , actionResult => actionResult + 10000
+  * , (actionResult, props) => actionResult + props + 10000
   * */
 );
 
