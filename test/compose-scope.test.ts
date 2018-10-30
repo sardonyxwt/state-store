@@ -8,20 +8,20 @@ describe('ComposeScope', () => {
 
   it('composeScope', () => {
 
-    function initScope(name) {
-      const scope = createAsyncScope(name);
+    function initScope(name: string) {
+      const scope = createAsyncScope({name});
       scope.registerAction(ACTION_NAME, (scope, props) => {
         return Promise.resolve(props);
       });
       return scope;
     }
 
-    const composedScope = composeScope('ComposeScope', [
+    const composedScope = composeScope([
       initScope('comS1'),
       initScope('comS2'),
       initScope('comS3'),
       initScope('comS4')
-    ]);
+    ], {name: 'ComposeScope'});
 
     composedScope.dispatch(ACTION_NAME, TEST_VALUE).then((newState) => {
       expect(newState).toEqual({

@@ -41,10 +41,18 @@ const logScopeMiddleware = {
 };
 
 // Create a new async scope.
-const counterAsyncScope = createAsyncScope('counterAsyncScope', 0, [logScopeMiddleware]);
+const counterAsyncScope = createAsyncScope({
+  name: 'counterAsyncScope',
+  initState: 0,
+  middleware: [logScopeMiddleware]
+});
 
 // Create a new sync scope.
-const counterSyncScope = createAsyncScope('counterScope', 0, [logScopeMiddleware]);
+const counterSyncScope = createAsyncScope({
+  name: 'counterScope', 
+  initState: 0, 
+  middleware: [logScopeMiddleware]
+});
 
 // Registers a new action in COUNTER_SCOPE.
 counterAsyncScope.registerAction(

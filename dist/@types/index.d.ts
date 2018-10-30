@@ -1,3 +1,25 @@
+/**
+ * @type ScopeConfig
+ * @summary Scope configuration
+ * @param {string} name The name of scope.
+ * @default Generate unique name.
+ * @param {any} initState The initial scope state.
+ * @default Empty object.
+ * @param {ScopeMiddleware[]} middleware The scope middleware.
+ * @description You can use middleware to use aspect programing.
+ * @default Empty array.
+ * @param {boolean} isSubscribeMacroAutoCreateEnable Is create subscribe macro when register action.
+ * @default false.
+ * @param {boolean} isFrozen Is scope frozen.
+ * @default false.
+ */
+export declare type ScopeConfig<T, OUT> = {
+    name?;
+    initState?: T;
+    middleware?: ScopeMiddleware<T, OUT>[];
+    isSubscribeMacroAutoCreateEnable?: boolean;
+    isFrozen?: boolean;
+};
 export declare type ScopeEvent<T = any> = {
     newState: T;
     oldState: T;
@@ -43,6 +65,11 @@ export interface Scope<T = any, OUT = any> {
      * @summary Is locked status.
      */
     readonly isLocked: boolean;
+    /**
+     * @var isSubscribeMacroAutoCreateEnable
+     * @summary Is subscribe macro auto create enable.
+     */
+    readonly isSubscribeMacroAutoCreateEnable: boolean;
     /**
      * @var supportActions
      * @summary Returns support actions.
@@ -187,46 +214,28 @@ export interface StoreDevTool {
 /**
  * @function createAsyncScope
  * @summary Create a new scope and return it.
- * @param {string} name The name of scope.
- * @default Generate unique name.
- * @param {any} initState The initial scope state.
- * @default Empty object.
- * @param {ScopeMiddleware[]} middleware The scope middleware.
- * @description You can use middleware to use aspect programing.
- * @default Empty array.
+ * @param {ScopeConfig} config The name of scope.
  * @return {Scope} Scope.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export declare function createAsyncScope<T>(name?: any, initState?: T, middleware?: ScopeMiddleware<T, Promise<T>>[]): AsyncScope<T>;
+export declare function createAsyncScope<T>(config?: ScopeConfig<T, Promise<T>>): AsyncScope<T>;
 /**
  * @function createSyncScope
  * @summary Create a new scope and return it.
- * @param {string} name The name of scope.
- * @default Generate unique name.
- * @param {any} initState The initial scope state.
- * @default Empty object.
- * @param {ScopeMiddleware[]} middleware The scope middleware.
- * @description You can use middleware to use aspect programing.
- * @default Empty array.
+ * @param {ScopeConfig} config The name of scope.
  * @return {Scope} Scope.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export declare function createSyncScope<T>(name?: any, initState?: T, middleware?: ScopeMiddleware<T, T>[]): SyncScope<T>;
+export declare function createSyncScope<T>(config?: ScopeConfig<T, T>): SyncScope<T>;
 /**
  * @function composeScope
  * @summary Compose a new scope and return it.
  * @description Compose a new scope and return it. All scopes is auto lock.
- * @param {string} name The name of scope
- * @param {(Scope | string)[]} scopes Scopes to compose.
- * @description Length must be greater than one
- * @param {ScopeMiddleware[]} middleware The scope middleware.
- * @description You can use middleware to use aspect programing.
- * @default Empty array.
  * @return {Scope} Compose scope.
  * @throws {Error} Will throw an error if scopes length less fewer than two.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export declare function composeScope(name: string, scopes: (Scope | string)[], middleware?: ScopeMiddleware<any, Promise<{}>>[]): AsyncScope<{}>;
+export declare function composeScope(scopes: (Scope | string)[], config?: ScopeConfig<any, Promise<{}>>): AsyncScope<{}>;
 /**
  * @function getScope
  * @summary Returns scope.

@@ -1,6 +1,22 @@
 import {deepFreeze} from '@sardonyxwt/utils/object';
 import {uniqueId} from '@sardonyxwt/utils/generator';
 
+/**
+ * @type ScopeConfig
+ * @summary Scope configuration
+ * @param {string} name The name of scope.
+ * @default Generate unique name.
+ * @param {any} initState The initial scope state.
+ * @default Empty object.
+ * @param {ScopeMiddleware[]} middleware The scope middleware.
+ * @description You can use middleware to use aspect programing.
+ * @default Empty array.
+ * @param {boolean} isSubscribeMacroAutoCreateEnable Is create subscribe macro when register action.
+ * @default false.
+ * @param {boolean} isFrozen Is scope frozen.
+ * @default false.
+ */
+export type ScopeConfig<T, OUT> = { name?, initState?: T, middleware?: ScopeMiddleware<T, OUT>[], isSubscribeMacroAutoCreateEnable?: boolean, isFrozen?: boolean };
 export type ScopeEvent<T = any> = { newState: T, oldState: T, scopeName: string, actionName: string, props };
 export type ScopeError<T = any> = { reason, oldState: T, scopeName: string, actionName: string, props };
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
@@ -39,6 +55,12 @@ export interface Scope<T = any, OUT = any> {
    * @summary Is locked status.
    */
   readonly isLocked: boolean;
+
+  /**
+   * @var isSubscribeMacroAutoCreateEnable
+   * @summary Is subscribe macro auto create enable.
+   */
+  readonly isSubscribeMacroAutoCreateEnable: boolean;
 
   /**
    * @var supportActions
@@ -214,16 +236,20 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
 
   protected readonly _name: string;
   protected _state: T;
-  protected _isFrozen = false;
-  protected _middleware: ScopeMiddleware<T, OUT>[] = [];
+  protected _isFrozen: boolean;
+  protected _isSubscribeMacroAutoCreateEnable: boolean;
+  protected _middleware: ScopeMiddleware<T, OUT>[];
   protected _actions: { [key: string]: ScopeAction<T, any, OUT> } = {};
   protected _listeners: { [key: string]: ScopeListener<T> } = {};
 
-  protected constructor(name: string, initState: T, middleware: ScopeMiddleware<T, OUT>[]) {
-    // This code needed to save middleware correct order in dispatch method.
+  protected constructor(config: ScopeConfig<T, OUT>) {
+    const {name, initState, middleware, isSubscribeMacroAutoCreateEnable, isFrozen} = config;
     this._name = name;
     this._state = initState;
+    // This code needed to save middleware correct order in dispatch method.
     this._middleware = [...middleware].reverse();
+    this._isSubscribeMacroAutoCreateEnable = isSubscribeMacroAutoCreateEnable;
+    this._isFrozen = isFrozen;
   }
 
   get name() {
@@ -232,6 +258,10 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
 
   get isLocked() {
     return this._isFrozen;
+  }
+
+  get isSubscribeMacroAutoCreateEnable() {
+    return this._isSubscribeMacroAutoCreateEnable;
   }
 
   get state() {
@@ -265,6 +295,18 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
     const actionDispatcher = (props: IN) => {
       return transformer(this.dispatch(actionName, props));
     };
+
+    if (this._isSubscribeMacroAutoCreateEnable) {
+      const capitalizeFirstLetterActionName = () => {
+        return actionName.charAt(0).toUpperCase() + actionName.slice(1);
+      };
+
+      const subscriberMacroName = `on${capitalizeFirstLetterActionName()}`;
+
+      this.registerMacro(subscriberMacroName, (state, listener: ScopeListener<T>) => {
+        return this.subscribe(listener, actionName);
+      });
+    }
 
     this[actionName] = actionDispatcher;
 
@@ -382,8 +424,8 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
 
 class SyncScopeImpl<T = any> extends ScopeImpl<T, T> {
 
-  constructor(name: string, initState: T, middleware: ScopeMiddleware<T, T>[]) {
-    super(name, initState, middleware);
+  constructor(config: ScopeConfig<T, T>) {
+    super(config);
   }
 
   dispatch(actionName: string, props?) {
@@ -450,8 +492,8 @@ class AsyncScopeImpl<T = any> extends ScopeImpl<T, Promise<T>> {
 
   private _actionQueue: (() => void)[] = [];
 
-  constructor(name: string, initState: T, middleware: ScopeMiddleware<T, Promise<T>>[]) {
-    super(name, initState, middleware);
+  constructor(config: ScopeConfig<T, Promise<T>>) {
+    super(config);
   }
 
   dispatch(actionName: string, props?) {
@@ -535,17 +577,12 @@ class ComposeScopeImpl extends AsyncScopeImpl<{}> {
   private readonly _scopes: Scope[];
 
   constructor(
-    name: string,
     scopes: Scope[],
-    middleware: ScopeMiddleware<{}, Promise<{}>>[]
+    config: ScopeConfig<any, Promise<{}>>
   ) {
-    super(name, {}, middleware);
+    super(config);
 
     this._scopes = scopes;
-
-    if (this.isLocked) {
-      throw new Error('You can not use middleware that lock scope to create a composite scope.');
-    }
 
     let actionNames: string[] = [];
 
@@ -597,19 +634,24 @@ class ComposeScopeImpl extends AsyncScopeImpl<{}> {
 const scopes: { [key: string]: Scope<any> } = {};
 
 function createScope<T>(
-  name = uniqueId('scope'),
-  initState: T = null,
-  middleware: ScopeMiddleware<T, T | Promise<T>>[] = [],
-  type: 'sync' | 'async'
+  type: 'sync' | 'async',
+  config: ScopeConfig<T, T | Promise<T>> = {}
 ): Scope<T> {
+  const {
+    name = uniqueId('scope'),
+    initState = null,
+    middleware = [],
+    isSubscribeMacroAutoCreateEnable = false,
+    isFrozen = false
+  } = config;
   if (name in scopes) {
     throw new Error(`Scope name must unique`);
   }
   let scope: Scope<T>;
   if (type === "async") {
-    scope = new AsyncScopeImpl<T>(name, initState, middleware as ScopeMiddleware<T, Promise<T>>[]);
+    scope = new AsyncScopeImpl<T>({name, initState, middleware: middleware as ScopeMiddleware<T, Promise<T>>[], isSubscribeMacroAutoCreateEnable, isFrozen});
   } else {
-    scope = new SyncScopeImpl<T>(name, initState, middleware as ScopeMiddleware<T, T>[]);
+    scope = new SyncScopeImpl<T>({name, initState, middleware: middleware as ScopeMiddleware<T, T>[], isSubscribeMacroAutoCreateEnable, isFrozen});
   }
   scopes[name] = scope;
   middleware.forEach(middleware => middleware.postSetup(scope));
@@ -622,56 +664,38 @@ function createScope<T>(
 /**
  * @function createAsyncScope
  * @summary Create a new scope and return it.
- * @param {string} name The name of scope.
- * @default Generate unique name.
- * @param {any} initState The initial scope state.
- * @default Empty object.
- * @param {ScopeMiddleware[]} middleware The scope middleware.
- * @description You can use middleware to use aspect programing.
- * @default Empty array.
+ * @param {ScopeConfig} config The name of scope.
  * @return {Scope} Scope.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export function createAsyncScope<T>(name?, initState?: T, middleware?: ScopeMiddleware<T, Promise<T>>[]): AsyncScope<T> {
-  return createScope(name, initState, middleware, 'async') as AsyncScope<T>;
+export function createAsyncScope<T>(config: ScopeConfig<T, Promise<T>> = {}): AsyncScope<T> {
+  return createScope('async', config) as AsyncScope<T>;
 }
 
 /**
  * @function createSyncScope
  * @summary Create a new scope and return it.
- * @param {string} name The name of scope.
- * @default Generate unique name.
- * @param {any} initState The initial scope state.
- * @default Empty object.
- * @param {ScopeMiddleware[]} middleware The scope middleware.
- * @description You can use middleware to use aspect programing.
- * @default Empty array.
+ * @param {ScopeConfig} config The name of scope.
  * @return {Scope} Scope.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export function createSyncScope<T>(name?, initState?: T, middleware?: ScopeMiddleware<T, T>[]): SyncScope<T> {
-  return createScope(name, initState, middleware, 'sync') as SyncScope<T>;
+export function createSyncScope<T>(config: ScopeConfig<T, T> = {}): SyncScope<T> {
+  return createScope('sync', config) as SyncScope<T>;
 }
 
 /**
  * @function composeScope
  * @summary Compose a new scope and return it.
  * @description Compose a new scope and return it. All scopes is auto lock.
- * @param {string} name The name of scope
- * @param {(Scope | string)[]} scopes Scopes to compose.
- * @description Length must be greater than one
- * @param {ScopeMiddleware[]} middleware The scope middleware.
- * @description You can use middleware to use aspect programing.
- * @default Empty array.
  * @return {Scope} Compose scope.
  * @throws {Error} Will throw an error if scopes length less fewer than two.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
 export function composeScope(
-  name: string,
   scopes: (Scope | string)[],
-  middleware: ScopeMiddleware<any, Promise<{}>>[] = []
+  config: ScopeConfig<any, Promise<{}>> = {},
 ): AsyncScope<{}> {
+  const {name = uniqueId('scope'), middleware = [], isSubscribeMacroAutoCreateEnable = false} = config;
   if (name in scopes) {
     throw new Error(`Scope name must unique`);
   }
@@ -684,7 +708,7 @@ export function composeScope(
   if (composeScopes.length < MIN_COMPOSE_SCOPE_COUNT) {
     throw new Error(`Compose scopes length must be greater than one`);
   }
-  const scope = new ComposeScopeImpl(name, composeScopes, middleware);
+  const scope = new ComposeScopeImpl(composeScopes, {name, middleware, isSubscribeMacroAutoCreateEnable, initState: null, isFrozen: false});
   scopes[name] = scope;
   middleware.forEach(middleware => middleware.postSetup(scope));
   if (storeDevTool) {
@@ -734,4 +758,4 @@ export function setStoreDevTool(devTool: StoreDevTool) {
  * @summary This scope is global
  * @type {Scope}
  */
-export const ROOT_SCOPE = createAsyncScope('rootScope', {});
+export const ROOT_SCOPE = createAsyncScope({name: 'rootScope', initState: {}});
