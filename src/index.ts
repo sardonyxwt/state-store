@@ -194,6 +194,19 @@ export interface ScopeMiddleware<T, OUT> {
 
 }
 
+export enum ScopeChangeEventType {
+  REGISTER_MACRO = 'REGISTER_MACRO',
+  REGISTER_ACTION = 'REGISTER_ACTION',
+  LOCK = 'LOCK'
+}
+
+export interface ScopeChangeDetails {
+  type: ScopeChangeEventType;
+  actionName?: string;
+  macroName?: string;
+  macroType?: ScopeMacroType;
+}
+
 /**
  * @interface StoreDevTool
  * @summary You can use StoreDevTool to handle all action in store.
@@ -211,8 +224,9 @@ export interface StoreDevTool {
    * @function onChange
    * @summary Call when change scope (lock, registerAction, dispatch).
    * @param {Scope} scope Changed scope.
+   * @param {ScopeChangeDetails} details Additional scope change details.
    */
-  onChange(scope: Scope): void;
+  onChange(scope: Scope, details: ScopeChangeDetails): void;
 
   /**
    * @function onAction
@@ -230,7 +244,12 @@ export interface StoreDevTool {
 
 }
 
-let storeDevTool: StoreDevTool = null;
+let storeDevTool: StoreDevTool = {
+  onCreate: () => null,
+  onChange: () => null,
+  onAction: () => null,
+  onActionError: () => null,
+};
 
 abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
 
@@ -288,9 +307,6 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
       throw new Error(`Action name ${actionName} is duplicate or reserved in scope ${this._name}.`);
     }
     this._actions[actionName] = action;
-    if (storeDevTool) {
-      storeDevTool.onChange(this);
-    }
 
     const actionDispatcher = (props: IN) => {
       return transformer(this.dispatch(actionName, props), props);
@@ -309,6 +325,8 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
     }
 
     this[actionName] = actionDispatcher;
+
+    storeDevTool.onChange(this, {type: ScopeChangeEventType.REGISTER_ACTION, actionName});
 
     return actionDispatcher;
   }
@@ -344,6 +362,8 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
         Object.defineProperty(this, macroName, {set: macroFunc, configurable: true, enumerable: true});
         break;
     }
+
+    storeDevTool.onChange(this, {type: ScopeChangeEventType.REGISTER_MACRO, macroName, macroType});
   }
 
   abstract dispatch(actionName: string, props?): OUT;
@@ -415,9 +435,7 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
 
   lock() {
     this._isFrozen = true;
-    if (storeDevTool) {
-      storeDevTool.onChange(this);
-    }
+    storeDevTool.onChange(this, {type: ScopeChangeEventType.LOCK});
   }
 
 }
@@ -453,10 +471,7 @@ class SyncScopeImpl<T = any> extends ScopeImpl<T, T> {
         props
       };
       this._state = newState;
-      if (storeDevTool) {
-        storeDevTool.onAction(event);
-        storeDevTool.onChange(this);
-      }
+      storeDevTool.onAction(event);
       Object.getOwnPropertyNames(this._listeners).forEach(key => {
         const listener = this._listeners[key];
         if (listener) listener(event);
@@ -472,9 +487,7 @@ class SyncScopeImpl<T = any> extends ScopeImpl<T, T> {
         actionName,
         props
       };
-      if (storeDevTool) {
-        storeDevTool.onActionError(error);
-      }
+      storeDevTool.onActionError(error);
       return error;
     };
 
@@ -544,10 +557,7 @@ class AsyncScopeImpl<T = any> extends ScopeImpl<T, Promise<T>> {
         props
       };
       this._state = newState;
-      if (storeDevTool) {
-        storeDevTool.onAction(event);
-        storeDevTool.onChange(this);
-      }
+      storeDevTool.onAction(event);
       Object.getOwnPropertyNames(this._listeners).forEach(key => {
         const listener = this._listeners[key];
         if (listener) listener(event);
@@ -562,9 +572,7 @@ class AsyncScopeImpl<T = any> extends ScopeImpl<T, Promise<T>> {
         actionName,
         props
       };
-      if (storeDevTool) {
-        storeDevTool.onActionError(error);
-      }
+      storeDevTool.onActionError(error);
       startNextDeferredAction();
       throw error;
     });
@@ -655,9 +663,7 @@ function createScope<T>(
   }
   scopes[name] = scope;
   middleware.forEach(middleware => middleware.postSetup(scope));
-  if (storeDevTool) {
-    storeDevTool.onCreate(scope);
-  }
+  storeDevTool.onCreate(scope);
   return scope;
 }
 
@@ -711,9 +717,7 @@ export function composeScope(
   const scope = new ComposeScopeImpl(composeScopes, {name, middleware, isSubscribeMacroAutoCreateEnable, initState: null, isFrozen: false});
   scopes[name] = scope;
   middleware.forEach(middleware => middleware.postSetup(scope));
-  if (storeDevTool) {
-    storeDevTool.onCreate(scope);
-  }
+  storeDevTool.onCreate(scope);
   return scope;
 }
 
@@ -749,8 +753,8 @@ export function getState() {
  * @summary Set store dev tool.
  * @param {StoreDevTool} devTool Dev tool middleware, to handle store changes.
  */
-export function setStoreDevTool(devTool: StoreDevTool) {
-  storeDevTool = devTool;
+export function setStoreDevTool(devTool: Partial<StoreDevTool>) {
+  Object.assign(storeDevTool, devTool);
 }
 
 /**

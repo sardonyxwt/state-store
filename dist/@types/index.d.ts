@@ -181,6 +181,17 @@ export interface ScopeMiddleware<T, OUT> {
      */
     appendActionMiddleware<IN>(action: ScopeAction<T, IN, OUT>): ScopeAction<T, IN, OUT>;
 }
+export declare enum ScopeChangeEventType {
+    REGISTER_MACRO = "REGISTER_MACRO",
+    REGISTER_ACTION = "REGISTER_ACTION",
+    LOCK = "LOCK",
+}
+export interface ScopeChangeDetails {
+    type: ScopeChangeEventType;
+    actionName?: string;
+    macroName?: string;
+    macroType?: ScopeMacroType;
+}
 /**
  * @interface StoreDevTool
  * @summary You can use StoreDevTool to handle all action in store.
@@ -196,8 +207,9 @@ export interface StoreDevTool {
      * @function onChange
      * @summary Call when change scope (lock, registerAction, dispatch).
      * @param {Scope} scope Changed scope.
+     * @param {ScopeChangeDetails} details Additional scope change details.
      */
-    onChange(scope: Scope): void;
+    onChange(scope: Scope, details: ScopeChangeDetails): void;
     /**
      * @function onAction
      * @summary Call when in any scope dispatch action.
@@ -255,7 +267,7 @@ export declare function getState(): {};
  * @summary Set store dev tool.
  * @param {StoreDevTool} devTool Dev tool middleware, to handle store changes.
  */
-export declare function setStoreDevTool(devTool: StoreDevTool): void;
+export declare function setStoreDevTool(devTool: Partial<StoreDevTool>): void;
 /**
  * @var ROOT_SCOPE
  * @summary This scope is global

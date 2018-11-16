@@ -168,13 +168,13 @@ setStoreDevTool({
   onCreate(scope) {
     console.log('Scope with name: ' + scope.name + ' created');
   },
-  //Call when change scope (lock, registerAction, dispatch).
-  onChange(scope) {
+  //Call when change scope (registerAction, registerMacro, lock).
+  onChange(scope, details) {
     console.log('Scope with name: ' + scope.name + ' changed', {
       supportActions: scope.supportActions,
       isLock: scope.isLocked,
       state: scope.state
-    })
+    }, 'details: ', details)
   },
   //Call when in any scope dispatch action.
   onAction(event) {
