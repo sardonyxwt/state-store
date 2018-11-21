@@ -303,7 +303,7 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
     if (this._isFrozen) {
       throw new Error(`This scope is locked you can't add new action.`);
     }
-    if (actionName in this._actions || actionName in this) {
+    if (actionName in this._actions || (this._isSubscribeMacroAutoCreateEnable && actionName in this)) {
       throw new Error(`Action name ${actionName} is duplicate or reserved in scope ${this._name}.`);
     }
     this._actions[actionName] = action;
@@ -342,10 +342,14 @@ abstract class ScopeImpl<T, OUT> implements Scope<T, OUT> {
     if (this._isFrozen) {
       throw new Error(`This scope is locked you can't add new macro.`);
     }
-    if (macroName in this
-      && (macroType === ScopeMacroType.FUNCTION
-        || macroType === ScopeMacroType.GETTER && Object.getOwnPropertyDescriptor(this, macroName).get
-        || macroType === ScopeMacroType.SETTER && Object.getOwnPropertyDescriptor(this, macroName).set)) {
+    const isMacroExist = macroName in this;
+    const isPresentMacroHasFunctionType = () => typeof this[macroName] === 'function';
+
+    if (isMacroExist
+      && (isPresentMacroHasFunctionType()
+        || macroType === ScopeMacroType.FUNCTION
+        || (macroType === ScopeMacroType.GETTER && Object.getOwnPropertyDescriptor(this, macroName).get)
+        || (macroType === ScopeMacroType.SETTER && Object.getOwnPropertyDescriptor(this, macroName).set))) {
       throw new Error(`Macro name ${macroName} is reserved in scope ${this._name}.`);
     }
     const macroFunc = (props?: IN) => {
