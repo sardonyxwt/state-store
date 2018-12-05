@@ -446,8 +446,6 @@ class ScopeImpl<T> implements Scope<T> {
         });
       };
 
-      deepFreeze(event);
-
       if (event.childrenEvents) {
         event.childrenEvents.forEach(dispatchEvent);
       }
