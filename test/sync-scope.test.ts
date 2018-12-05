@@ -1,9 +1,9 @@
 /// <reference types="jest" />
-import {createSyncScope, getState, SyncScope, ROOT_SCOPE} from '../src';
+import {createScope, getState, Scope} from '../src';
 
 describe('Scope', () => {
 
-  let scope: SyncScope<number>;
+  let scope: Scope<number>;
 
   let listenerId;
   let objectSynchronizeId;
@@ -12,7 +12,7 @@ describe('Scope', () => {
   const TEST_VALUE = 1000;
 
   it('createScope', () => {
-    scope = createSyncScope();
+    scope = createScope();
   });
 
   it('registerAction', () => {
@@ -73,7 +73,6 @@ describe('Scope', () => {
   it('getState', () => {
     const state = getState();
     expect(state).toEqual({
-      [ROOT_SCOPE.name]: {},
       [scope.name]: TEST_VALUE
     });
   });

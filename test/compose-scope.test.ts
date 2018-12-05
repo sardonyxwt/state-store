@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import {composeScope, createAsyncScope} from "../src";
+import {composeScope, createScope} from "../src";
 
 describe('ComposeScope', () => {
 
@@ -9,9 +9,9 @@ describe('ComposeScope', () => {
   it('composeScope', () => {
 
     function initScope(name: string) {
-      const scope = createAsyncScope({name});
+      const scope = createScope({name});
       scope.registerAction(ACTION_NAME, (scope, props) => {
-        return Promise.resolve(props);
+        return props;
       });
       return scope;
     }
@@ -23,13 +23,11 @@ describe('ComposeScope', () => {
       initScope('comS4')
     ], {name: 'ComposeScope'});
 
-    composedScope.dispatch(ACTION_NAME, TEST_VALUE).then((newState) => {
-      expect(newState).toEqual({
-        'comS1': TEST_VALUE,
-        'comS2': TEST_VALUE,
-        'comS3': TEST_VALUE,
-        'comS4': TEST_VALUE
-      });
+    expect(composedScope.dispatch(ACTION_NAME, TEST_VALUE)).toEqual({
+      'comS1': TEST_VALUE,
+      'comS2': TEST_VALUE,
+      'comS3': TEST_VALUE,
+      'comS4': TEST_VALUE
     });
 
   });

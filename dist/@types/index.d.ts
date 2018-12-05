@@ -13,10 +13,10 @@
  * @param {boolean} isFrozen Is scope frozen.
  * @default false.
  */
-export declare type ScopeConfig<T, OUT> = {
+export declare type ScopeConfig<T> = {
     name?;
     initState?: T;
-    middleware?: ScopeMiddleware<T, OUT>[];
+    middleware?: ScopeMiddleware<T>[];
     isSubscribeMacroAutoCreateEnable?: boolean;
     isFrozen?: boolean;
 };
@@ -35,10 +35,10 @@ export declare type ScopeError<T = any> = {
     props;
 };
 export declare type ScopeListener<T> = (event: ScopeEvent<T>) => void;
-export declare type ScopeAction<T, IN, OUT> = (state: T, props: IN) => OUT;
-export declare type ScopeMacro<T, IN, OUT> = (state: T, props?: IN) => OUT;
-export declare type ScopeActionResultTransformer<IN, OUT, TRANSFORMED_OUT> = (actionResult: OUT, props: IN) => TRANSFORMED_OUT;
-export declare type ScopeActionDispatcher<T, IN, OUT> = (props: IN) => OUT;
+export declare type ScopeAction<T, PROPS> = (state: T, props?: PROPS) => T;
+export declare type ScopeMacro<T, PROPS, OUT> = (state: T, props?: PROPS) => OUT;
+export declare type ScopeActionResultTransformer<T, PROPS, TRANSFORMED_OUT> = (actionResult: T, props: PROPS) => TRANSFORMED_OUT;
+export declare type ScopeActionDispatcher<T, PROPS, OUT> = (props?: PROPS, context?: T) => OUT;
 export declare enum ScopeMacroType {
     GETTER = "GETTER",
     SETTER = "SETTER",
@@ -48,7 +48,7 @@ export declare enum ScopeMacroType {
  * @interface Scope
  * @summary The whole state of your app is stored in an scopes inside a single store.
  */
-export interface Scope<T = any, OUT = any> {
+export interface Scope<T = any> {
     /**
      * @var name.
      * @summary Scope name.
@@ -65,6 +65,11 @@ export interface Scope<T = any, OUT = any> {
      * @summary Is locked status.
      */
     readonly isLocked: boolean;
+    /**
+     * @var isActionDispatchAvailable
+     * @summary Is action dispatch available status.
+     */
+    readonly isActionDispatchAvailable: boolean;
     /**
      * @var isSubscribeMacroAutoCreateEnable
      * @summary Is subscribe macro auto create enable.
@@ -86,7 +91,7 @@ export interface Scope<T = any, OUT = any> {
      * @throws {Error} Will throw an error if the scope locked or action name exists in scope
      * when it is called.
      */
-    registerAction<IN, TRANSFORMED_OUT = OUT>(actionName: string, action: ScopeAction<T, IN, OUT>, transformer?: ScopeActionResultTransformer<IN, OUT, TRANSFORMED_OUT>): ScopeActionDispatcher<T, IN, TRANSFORMED_OUT>;
+    registerAction<PROPS, TRANSFORMED_OUT = T>(actionName: string, action: ScopeAction<T, PROPS>, transformer?: ScopeActionResultTransformer<T, PROPS, TRANSFORMED_OUT>): ScopeActionDispatcher<T, PROPS, TRANSFORMED_OUT>;
     /**
      * @function registerMacro
      * @summary Registers a new macro in scope.
@@ -96,7 +101,7 @@ export interface Scope<T = any, OUT = any> {
      * @throws {Error} Will throw an error if the scope locked or macro name exists in scope
      * when it is called.
      */
-    registerMacro<IN, OUT>(macroName: string, macro: ScopeMacro<T, IN, OUT>, macroType?: ScopeMacroType): any;
+    registerMacro<PROPS, OUT>(macroName: string, macro: ScopeMacro<T, PROPS, OUT>, macroType?: ScopeMacroType): any;
     /**
      * @function dispatch
      * @summary Dispatches an action.
@@ -105,11 +110,12 @@ export interface Scope<T = any, OUT = any> {
      * @description This action change state of scope and return new state.
      * You can use resolve to change the state or reject to throw an exception.
      * @param {any?} props Additional data for the correct operation of the action.
-     * @return {Promise} Return promise.
-     * You can use it to get a new state of scope or catch errors.
-     * @throws {Error} Will throw an error if the actionName not present in scope.
+     * @param {any extends T?} context State context. Only available in cascading action.
+     * @return {any extends T} Return new state.
+     * @throws {Error} Will throw an error if the actionName not present in scope
+     * or {isActionDispatchAvailable} is false.
      */
-    dispatch(actionName: string, props?: any): OUT;
+    dispatch(actionName: string, props?: any, context?: T): T;
     /**
      * @function subscribe
      * @summary Adds a scope change listener.
@@ -148,38 +154,24 @@ export interface Scope<T = any, OUT = any> {
     lock(): void;
 }
 /**
- * @interface SyncScope
- * @summary The whole state of your app is stored in an scopes inside a single store.
- * @description Use this scope type with promises actions.
- */
-export interface SyncScope<T = any> extends Scope<T, T> {
-}
-/**
- * @interface AsyncScope
- * @summary The whole state of your app is stored in an scopes inside a single store.
- * @description Use this scope type with synced actions.
- */
-export interface AsyncScope<T = any> extends Scope<T, Promise<T>> {
-}
-/**
  * @interface ScopeMiddleware
  * @summary You can use middleware to use aspect programing.
  */
-export interface ScopeMiddleware<T, OUT> {
+export interface ScopeMiddleware<T> {
     /**
      * @function postSetup
      * @param {Scope} scope Created scope.
      * @summary You can use this method to setup custom actions in scope or
      * subscribe to actions in scope. Lock scope in this point is bad practice.
      */
-    postSetup(scope: Scope<T, OUT>): void;
+    postSetup(scope: Scope<T>): void;
     /**
      * @function appendActionMiddleware
      * @summary This method wraps the action with a new action and returns it.
      * @param {ScopeAction} action Wrapped action.
      * @return {ScopeAction} Action that wrapped old action
      */
-    appendActionMiddleware<IN>(action: ScopeAction<T, IN, OUT>): ScopeAction<T, IN, OUT>;
+    appendActionMiddleware<PROPS>(action: ScopeAction<T, PROPS>): ScopeAction<T, PROPS>;
 }
 export declare enum ScopeChangeEventType {
     REGISTER_MACRO = "REGISTER_MACRO",
@@ -224,21 +216,13 @@ export interface StoreDevTool {
     onActionError(error: ScopeError): void;
 }
 /**
- * @function createAsyncScope
+ * @function createScope
  * @summary Create a new scope and return it.
- * @param {ScopeConfig} config The name of scope.
+ * @param {ScopeConfig} config The config of scope.
  * @return {Scope} Scope.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export declare function createAsyncScope<T>(config?: ScopeConfig<T, Promise<T>>): AsyncScope<T>;
-/**
- * @function createSyncScope
- * @summary Create a new scope and return it.
- * @param {ScopeConfig} config The name of scope.
- * @return {Scope} Scope.
- * @throws {Error} Will throw an error if name of scope not unique.
- */
-export declare function createSyncScope<T>(config?: ScopeConfig<T, T>): SyncScope<T>;
+export declare function createScope<T>(config?: ScopeConfig<T>): Scope<T>;
 /**
  * @function composeScope
  * @summary Compose a new scope and return it.
@@ -247,7 +231,7 @@ export declare function createSyncScope<T>(config?: ScopeConfig<T, T>): SyncScop
  * @throws {Error} Will throw an error if scopes length less fewer than two.
  * @throws {Error} Will throw an error if name of scope not unique.
  */
-export declare function composeScope(scopes: (Scope | string)[], config?: ScopeConfig<any, Promise<{}>>): AsyncScope<{}>;
+export declare function composeScope<T = {}>(scopes: (Scope | string)[], config?: ScopeConfig<T>): Scope<T>;
 /**
  * @function getScope
  * @summary Returns scope.
@@ -255,7 +239,7 @@ export declare function composeScope(scopes: (Scope | string)[], config?: ScopeC
  * @return {Scope} Scope
  * @throws {Error} Will throw an error if scope not present.
  */
-export declare function getScope(scopeName: string): Scope<any, any>;
+export declare function getScope(scopeName: string): Scope<any>;
 /**
  * @function getState
  * @summary Returns all scope states.
@@ -268,9 +252,3 @@ export declare function getState(): {};
  * @param {StoreDevTool} devTool Dev tool middleware, to handle store changes.
  */
 export declare function setStoreDevTool(devTool: Partial<StoreDevTool>): void;
-/**
- * @var ROOT_SCOPE
- * @summary This scope is global
- * @type {Scope}
- */
-export declare const ROOT_SCOPE: AsyncScope<{}>;

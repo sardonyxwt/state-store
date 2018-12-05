@@ -1,6 +1,6 @@
 ## [state-store](https://github.com/sardonyxwt/state-store) 
 
-state-store is a predictable async state container for JavaScript and Typescript apps. 
+state-store is a predictable sync state container for JavaScript and Typescript apps. 
 
 ### Installation
 
@@ -21,7 +21,7 @@ To specify how the actions transform the scope, you write pure *action* and regi
 That's it!
 
 ```js
-import {createAsyncScope, createSyncScope, composeScope, setStoreDevTool} from '@sardonyxwt/state-store';
+import {createScope, composeScope, setStoreDevTool} from '@sardonyxwt/state-store';
 
 const INCREMENT_ACTION = 'increment';
 const DECREMENT_ACTION = 'decrement';
@@ -40,39 +40,32 @@ const logScopeMiddleware = {
   }
 };
 
-// Create a new async scope.
-const counterAsyncScope = createAsyncScope({
-  name: 'counterAsyncScope',
-  initState: 0,
-  middleware: [logScopeMiddleware]
-});
-
-// Create a new sync scope.
-const counterSyncScope = createAsyncScope({
+// Create a new scope.
+const counterScope = createScope({
   name: 'counterScope', 
   initState: 0, 
   middleware: [logScopeMiddleware]
 });
 
 // Registers a new action in COUNTER_SCOPE.
-counterAsyncScope.registerAction(
+counterScope.registerAction(
   INCREMENT_ACTION,
-  (scope, props) => Promise.resolve(scope + 1)
+  (scope, props) => scope + 1
 );
 
-counterAsyncScope.registerAction(
+counterScope.registerAction(
   DECREMENT_ACTION,
-  (scope, props) => Promise.resolve(scope - 1),
+  (scope, props) => scope - 1,
 );
 
 // You can save action dispatcher and call later.
-const setCouterActionDispatcher = counterAsyncScope.registerAction(
+const setCouterActionDispatcher = counterScope.registerAction(
   SET_COUNTER_ACTION,
   (scope, props) => {
     if(typeof props !== 'number') {
       throw new Error('Props is not number');
     }
-    return Promise.resolve(props);
+    return props;
   }
   /*
   * You can use actionResultTransformer to change result value it only affect in action dispatcher.
@@ -81,7 +74,7 @@ const setCouterActionDispatcher = counterAsyncScope.registerAction(
 );
 
 // You can add macro as it and call later.
-counterAsyncScope.registerMacro('remains', (state, props) => {
+counterScope.registerMacro('remains', (state, props) => {
   const remains = props - state;
   if (remains < 0) {
     return 0;
@@ -90,25 +83,25 @@ counterAsyncScope.registerMacro('remains', (state, props) => {
 });
 
 // You can add macro as getter or setter type.
-counterAsyncScope.registerMacro('count', (state) => {
+counterScope.registerMacro('count', (state) => {
   return state;
 }, 'GETTER');
 
 // You can use lock() to forbid add new action to scope.
-counterAsyncScope.lock();
+counterScope.lock();
 
 // You can use isLocked to check is scope is lock.
-console.log(counterAsyncScope.isLocked);
+console.log(counterScope.isLocked);
 
 // You can use subscribe() to update the UI in response to state changes.
-let allActionListenerId = counterAsyncScope.subscribe(
+let allActionListenerId = counterScope.subscribe(
   ({oldScope, newScope, scopeName, actionName, props}) => {
     console.log(oldScope, newScope, scopeName, actionName, props)
   }
 );
 
 // You can use subscribe() with specific actionName (you can use array of actions) to handle only this action.
-let setCounterActionListenerId = counterAsyncScope.subscribe(
+let setCounterActionListenerId = counterScope.subscribe(
   () => console.log('set counter value action dispatch.'),
   SET_COUNTER_ACTION
 );
@@ -116,47 +109,49 @@ let setCounterActionListenerId = counterAsyncScope.subscribe(
 let syncObject1 = {}, syncObject2 = {};
 
 // You can use synchronize() to synchronize the object with scope state.
-let synchronizeObject1Id = counterAsyncScope.synchronize(syncObject1, 'state');
+let synchronizeObject1Id = counterScope.synchronize(syncObject1, 'state');
 
 // You can use synchronize() with specific actionName to handle only this action.
-let synchronizeObject2Id = counterAsyncScope.synchronize(syncObject2, 'state', INCREMENT_ACTION);
+let synchronizeObject2Id = counterScope.synchronize(syncObject2, 'state', INCREMENT_ACTION);
 
 // The only way to mutate the internal state in scope is to dispatch an action.
-counterAsyncScope.dispatch(INCREMENT_ACTION);
-counterAsyncScope.dispatch(DECREMENT_ACTION);
+counterScope.dispatch(INCREMENT_ACTION);
+counterScope.dispatch(DECREMENT_ACTION);
 
-counterAsyncScope.dispatch(SET_COUNTER_ACTION, 1000)
-  .then(newScope => console.log(newScope));
+console.log(counterScope.dispatch(SET_COUNTER_ACTION, 1000))
 
-counterAsyncScope.dispatch(SET_COUNTER_ACTION, "invalid props")
-  .catch(err => console.log(err));
+try {
+  counterScope.dispatch(SET_COUNTER_ACTION, "invalid props")
+} catch (err) {
+  console.log(err)
+}
 
 // dispatch action with action dispatcher.
 setCouterActionDispatcher(1000);
 
 // or you can call action dispatcher like this.
 // The method name is the same as the action name.
-counterAsyncScope.setCounter(2000);
+counterScope.setCounter(2000);
 
 // call remains macro.
-console.log(counterAsyncScope.remains(10000));
+console.log(counterScope.remains(10000));
 
 // call getter count macro.
-console.log(counterAsyncScope.count);
+console.log(counterScope.count);
 
-counterAsyncScope.unsubscribe(allActionListenerId);
-counterAsyncScope.unsubscribe(setCounterActionListenerId);
-counterAsyncScope.unsubscribe(synchronizeObject1Id);
-counterAsyncScope.unsubscribe(synchronizeObject2Id);
+counterScope.unsubscribe(allActionListenerId);
+counterScope.unsubscribe(setCounterActionListenerId);
+counterScope.unsubscribe(synchronizeObject1Id);
+counterScope.unsubscribe(synchronizeObject2Id);
 
-console.log(counterAsyncScope.state);
+console.log(counterScope.state);
 
 
 // You can use getSupportActions to get supported actions of scope.
-console.log(counterAsyncScope.supportActions);
+console.log(counterScope.supportActions);
 
 // You can use composeScope to create compose scope.
-const composedScope = composeScope('ComposeScope', [counterAsyncScope, ROOT_SCOPE]);
+const composedScope = composeScope('ComposeScope', [counterScope]);
 
 composedScope.dispatch(SET_COUNTER_ACTION, 2000);
 
