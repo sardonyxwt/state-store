@@ -420,19 +420,24 @@ class ScopeImpl<T> implements Scope<T> {
         actionName,
         props
       };
+
       if (this._isActionInProgress) {
         this._contextEvents
           ? this._contextEvents.push(event)
           : this._contextEvents = [event];
         return newState;
       }
+
       this._state = newState;
+
       event.childrenEvents = this._contextEvents
         ? this._contextEvents
           .map(contextEvent => ({...contextEvent, parentEvent: event}))
         : null;
+
       this._contextEvents = null;
       this._isActionDispatchAvailable = false;
+
       const dispatchEvent = (event: ScopeEvent<T>) => {
         storeDevTool.onAction(event);
         Object.getOwnPropertyNames(this._listeners).forEach(key => {
@@ -440,11 +445,14 @@ class ScopeImpl<T> implements Scope<T> {
           if (listener) listener(event);
         });
       };
-      dispatchEvent(event);
+
       if (event.childrenEvents) {
         event.childrenEvents.forEach(dispatchEvent);
       }
+      dispatchEvent(event);
+
       this._isActionDispatchAvailable = true;
+
       return newState;
     };
 
