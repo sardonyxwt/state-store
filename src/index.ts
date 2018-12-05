@@ -446,6 +446,8 @@ class ScopeImpl<T> implements Scope<T> {
         });
       };
 
+      deepFreeze(event);
+
       if (event.childrenEvents) {
         event.childrenEvents.forEach(dispatchEvent);
       }
@@ -467,6 +469,10 @@ class ScopeImpl<T> implements Scope<T> {
       storeDevTool.onActionError(error);
       return error;
     };
+
+    if (this._isActionInProgress) {
+      return onFulfilled(action(oldState, props));
+    }
 
     try {
       this._isActionInProgress = true;
