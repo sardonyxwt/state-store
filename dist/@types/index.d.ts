@@ -26,6 +26,8 @@ export declare type ScopeEvent<T = any> = {
     scopeName: string;
     actionName: string;
     props;
+    parentEvent?: ScopeEvent<T>;
+    childrenEvents?: ScopeEvent<T>[];
 };
 export declare type ScopeError<T = any> = {
     reason;

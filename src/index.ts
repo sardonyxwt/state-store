@@ -16,9 +16,29 @@ import {uniqueId} from '@sardonyxwt/utils/generator';
  * @param {boolean} isFrozen Is scope frozen.
  * @default false.
  */
-export type ScopeConfig<T> = { name?, initState?: T, middleware?: ScopeMiddleware<T>[], isSubscribeMacroAutoCreateEnable?: boolean, isFrozen?: boolean };
-export type ScopeEvent<T = any> = { newState: T, oldState: T, scopeName: string, actionName: string, props };
-export type ScopeError<T = any> = { reason, oldState: T, scopeName: string, actionName: string, props };
+export type ScopeConfig<T> = {
+  name?,
+  initState?: T,
+  middleware?: ScopeMiddleware<T>[],
+  isSubscribeMacroAutoCreateEnable?: boolean,
+  isFrozen?: boolean
+};
+export type ScopeEvent<T = any> = {
+  newState: T,
+  oldState: T,
+  scopeName: string,
+  actionName: string,
+  props,
+  parentEvent?: ScopeEvent<T>,
+  childrenEvents?: ScopeEvent<T>[]
+};
+export type ScopeError<T = any> = {
+  reason,
+  oldState: T,
+  scopeName: string,
+  actionName: string,
+  props
+};
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export type ScopeAction<T, PROPS> = (state: T, props?: PROPS) => T;
 export type ScopeMacro<T, PROPS, OUT> = (state: T, props?: PROPS) => OUT;
@@ -255,6 +275,7 @@ class ScopeImpl<T> implements Scope<T> {
   protected _middleware: ScopeMiddleware<T>[];
   protected _actions: { [key: string]: ScopeAction<T, any> } = {};
   protected _listeners: { [key: string]: ScopeListener<T> } = {};
+  protected _contextEvents: ScopeEvent<T>[];
 
   constructor(config: ScopeConfig<T>) {
     const {name, initState, middleware, isSubscribeMacroAutoCreateEnable, isFrozen} = config;
@@ -399,13 +420,30 @@ class ScopeImpl<T> implements Scope<T> {
         actionName,
         props
       };
+      if (this._isActionInProgress) {
+        this._contextEvents
+          ? this._contextEvents.push(event)
+          : this._contextEvents = [event];
+        return newState;
+      }
       this._state = newState;
-      storeDevTool.onAction(event);
+      event.childrenEvents = this._contextEvents
+        ? this._contextEvents
+          .map(contextEvent => ({...contextEvent, parentEvent: event}))
+        : null;
+      this._contextEvents = null;
       this._isActionDispatchAvailable = false;
-      Object.getOwnPropertyNames(this._listeners).forEach(key => {
-        const listener = this._listeners[key];
-        if (listener) listener(event);
-      });
+      const dispatchEvent = (event: ScopeEvent<T>) => {
+        storeDevTool.onAction(event);
+        Object.getOwnPropertyNames(this._listeners).forEach(key => {
+          const listener = this._listeners[key];
+          if (listener) listener(event);
+        });
+      };
+      dispatchEvent(event);
+      if (event.childrenEvents) {
+        event.childrenEvents.forEach(dispatchEvent);
+      }
       this._isActionDispatchAvailable = true;
       return newState;
     };
