@@ -430,10 +430,10 @@ class ScopeImpl<T> implements Scope<T> {
 
       this._state = newState;
 
-      event.childrenEvents = this._contextEvents
-        ? this._contextEvents
-          .map(contextEvent => ({...contextEvent, parentEvent: event}))
-        : null;
+      if (this._contextEvents) {
+        event.childrenEvents = this._contextEvents
+          .map(contextEvent => ({...contextEvent, parentEvent: event}));
+      }
 
       this._contextEvents = null;
       this._isActionDispatchAvailable = false;
