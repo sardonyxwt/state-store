@@ -465,12 +465,18 @@ class ScopeImpl<T> implements Scope<T> {
         actionName,
         props
       };
-      storeDevTool.onActionError(error);
+      if (!this._isActionInProgress) {
+        storeDevTool.onActionError(error);
+      }
       return error;
     };
 
     if (this._isActionInProgress) {
-      return onFulfilled(action(oldState, props));
+      try {
+        return onFulfilled(action(oldState, props));
+      } catch (e) {
+        throw onRejected(e);
+      }
     }
 
     try {
