@@ -135,11 +135,12 @@ export interface Scope<T = any> {
    * You can use resolve to change the state or reject to throw an exception.
    * @param {any?} props Additional data for the correct operation of the action.
    * @param {any extends T?} context State context. Only available in cascading action.
+   * @param {boolean?} emitEvent You can specify emit event or not in cascading dispatch.
    * @return {any extends T} Return new state.
    * @throws {Error} Will throw an error if the actionName not present in scope
    * or {isActionDispatchAvailable} is false.
    */
-  dispatch(actionName: string, props?, context?: T): T;
+  dispatch(actionName: string, props?, context?: T, emitEvent?: boolean): T;
 
   /**
    * @function subscribe
@@ -390,7 +391,7 @@ class ScopeImpl<T> implements Scope<T> {
     storeDevTool.onChange(this, {type: ScopeChangeEventType.REGISTER_MACRO, macroName, macroType});
   }
 
-  dispatch(actionName: string, props?, context?: T) {
+  dispatch(actionName: string, props?, context: T = null, emitEvent = true) {
     let action: ScopeAction<T, any> = this._actions[actionName];
 
     if (!action) {
@@ -421,7 +422,7 @@ class ScopeImpl<T> implements Scope<T> {
         props
       };
 
-      if (this._isActionInProgress) {
+      if (this._isActionInProgress && emitEvent) {
         this._contextEvents
           ? this._contextEvents.push(event)
           : this._contextEvents = [event];

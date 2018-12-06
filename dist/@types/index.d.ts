@@ -113,11 +113,12 @@ export interface Scope<T = any> {
      * You can use resolve to change the state or reject to throw an exception.
      * @param {any?} props Additional data for the correct operation of the action.
      * @param {any extends T?} context State context. Only available in cascading action.
+     * @param {boolean?} emitEvent You can specify emit event or not in cascading dispatch.
      * @return {any extends T} Return new state.
      * @throws {Error} Will throw an error if the actionName not present in scope
      * or {isActionDispatchAvailable} is false.
      */
-    dispatch(actionName: string, props?: any, context?: T): T;
+    dispatch(actionName: string, props?: any, context?: T, emitEvent?: boolean): T;
     /**
      * @function subscribe
      * @summary Adds a scope change listener.
