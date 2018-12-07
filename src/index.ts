@@ -256,6 +256,13 @@ export interface StoreDevTool {
    */
   onActionError(error: ScopeError): void;
 
+  /**
+   * @function onActionListenerError
+   * @summary Call when in any scope listener dispatch error.
+   * @param {ScopeError} error ActionListener error.
+   */
+  onActionListenerError(error: ScopeError): void;
+
 }
 
 let storeDevTool: StoreDevTool = {
@@ -263,6 +270,7 @@ let storeDevTool: StoreDevTool = {
   onChange: () => null,
   onAction: () => null,
   onActionError: () => null,
+  onActionListenerError: () => null
 };
 
 class ScopeImpl<T> implements Scope<T> {
@@ -412,6 +420,14 @@ class ScopeImpl<T> implements Scope<T> {
 
     const oldState = this._isActionInProgress ? context : this._state;
 
+    const buildScopeError = (reason) => ({
+      reason,
+      oldState,
+      scopeName: this._name,
+      actionName,
+      props
+    }) as ScopeError<T>;
+
     const onFulfilled = newState => {
       deepFreeze(newState);
       const event: ScopeEvent<T> = {
@@ -443,7 +459,11 @@ class ScopeImpl<T> implements Scope<T> {
         storeDevTool.onAction(event);
         Object.getOwnPropertyNames(this._listeners).forEach(key => {
           const listener = this._listeners[key];
-          if (listener) listener(event);
+          try {
+            if (listener) listener(event);
+          } catch (reason) {
+            storeDevTool.onActionListenerError(buildScopeError(reason));
+          }
         });
       };
 
@@ -458,13 +478,7 @@ class ScopeImpl<T> implements Scope<T> {
     };
 
     const onRejected = reason => {
-      const error: ScopeError<T> = {
-        reason,
-        oldState,
-        scopeName: this._name,
-        actionName,
-        props
-      };
+      const error = buildScopeError(reason);
       if (!this._isActionInProgress) {
         storeDevTool.onActionError(error);
       }

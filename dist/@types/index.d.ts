@@ -217,6 +217,12 @@ export interface StoreDevTool {
      * @param {ScopeError} error Action error.
      */
     onActionError(error: ScopeError): void;
+    /**
+     * @function onActionListenerError
+     * @summary Call when in any scope listener dispatch error.
+     * @param {ScopeError} error ActionListener error.
+     */
+    onActionListenerError(error: ScopeError): void;
 }
 /**
  * @function createScope
