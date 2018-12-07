@@ -40,7 +40,7 @@ export declare type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export declare type ScopeAction<T, PROPS> = (state: T, props?: PROPS) => T;
 export declare type ScopeMacro<T, PROPS, OUT> = (state: T, props?: PROPS) => OUT;
 export declare type ScopeActionResultTransformer<T, PROPS, TRANSFORMED_OUT> = (actionResult: T, props: PROPS) => TRANSFORMED_OUT;
-export declare type ScopeActionDispatcher<T, PROPS, OUT> = (props?: PROPS, context?: T) => OUT;
+export declare type ScopeActionDispatcher<T, PROPS, OUT> = (props?: PROPS, emitEvent?: boolean) => OUT;
 export declare enum ScopeMacroType {
     GETTER = "GETTER",
     SETTER = "SETTER",

@@ -43,7 +43,7 @@ export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export type ScopeAction<T, PROPS> = (state: T, props?: PROPS) => T;
 export type ScopeMacro<T, PROPS, OUT> = (state: T, props?: PROPS) => OUT;
 export type ScopeActionResultTransformer<T, PROPS, TRANSFORMED_OUT> = (actionResult: T, props: PROPS) => TRANSFORMED_OUT;
-export type ScopeActionDispatcher<T, PROPS, OUT> = (props?: PROPS, context?: T) => OUT;
+export type ScopeActionDispatcher<T, PROPS, OUT> = (props?: PROPS, emitEvent?: boolean) => OUT;
 
 export enum ScopeMacroType {
   GETTER = 'GETTER',
@@ -347,8 +347,8 @@ class ScopeImpl<T> implements Scope<T> {
     }
     this._actions[actionName] = action;
 
-    const actionDispatcher = (props?: PROPS) => {
-      return transformer(this.dispatch(actionName, props), props);
+    const actionDispatcher = (props?: PROPS, emitEvent?: boolean) => {
+      return transformer(this.dispatch(actionName, props, emitEvent), props);
     };
 
     if (this._isSubscribeMacroAutoCreateEnable) {
@@ -481,11 +481,10 @@ class ScopeImpl<T> implements Scope<T> {
         });
       };
 
-      if (event.childrenEvents) {
-        event.childrenEvents.forEach(dispatchEvent);
-      }
-
       if (emitEvent) {
+        if (event.childrenEvents) {
+          event.childrenEvents.forEach(dispatchEvent);
+        }
         dispatchEvent(event);
       }
 
