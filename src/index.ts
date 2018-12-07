@@ -71,6 +71,12 @@ export interface Scope<T = any> {
   readonly state: T;
 
   /**
+   * @var context
+   * @summary Scope action current context.
+   */
+  readonly context: T;
+
+  /**
    * @var isLocked
    * @summary Is locked status.
    */
@@ -134,13 +140,12 @@ export interface Scope<T = any> {
    * @description This action change state of scope and return new state.
    * You can use resolve to change the state or reject to throw an exception.
    * @param {any?} props Additional data for the correct operation of the action.
-   * @param {any extends T?} context State context. Only available in cascading action.
-   * @param {boolean?} emitEvent You can specify emit event or not in cascading dispatch.
+   * @param {boolean?} emitEvent You can specify emit event or not.
    * @return {any extends T} Return new state.
    * @throws {Error} Will throw an error if the actionName not present in scope
    * or {isActionDispatchAvailable} is false.
    */
-  dispatch(actionName: string, props?, context?: T, emitEvent?: boolean): T;
+  dispatch(actionName: string, props?, emitEvent?: boolean): T;
 
   /**
    * @function subscribe
@@ -277,6 +282,7 @@ class ScopeImpl<T> implements Scope<T> {
 
   protected readonly _name: string;
   protected _state: T;
+  protected _context: T;
   protected _isFrozen: boolean;
   protected _isActionInProgress: boolean = false;
   protected _isActionDispatchAvailable: boolean = true;
@@ -314,6 +320,10 @@ class ScopeImpl<T> implements Scope<T> {
 
   get state() {
     return this._state;
+  }
+
+  get context() {
+    return this._context;
   }
 
   get supportActions() {
@@ -399,7 +409,7 @@ class ScopeImpl<T> implements Scope<T> {
     storeDevTool.onChange(this, {type: ScopeChangeEventType.REGISTER_MACRO, macroName, macroType});
   }
 
-  dispatch(actionName: string, props?, context: T = null, emitEvent = true) {
+  dispatch(actionName: string, props?, emitEvent = true) {
     let action: ScopeAction<T, any> = this._actions[actionName];
 
     if (!action) {
@@ -418,7 +428,7 @@ class ScopeImpl<T> implements Scope<T> {
       middleware => action = middleware.appendActionMiddleware(action)
     );
 
-    const oldState = this._isActionInProgress ? context : this._state;
+    const oldState = this._isActionInProgress ? this._context : this._state;
 
     const buildScopeError = (reason) => ({
       reason,
@@ -438,13 +448,17 @@ class ScopeImpl<T> implements Scope<T> {
         props
       };
 
-      if (this._isActionInProgress && emitEvent) {
-        this._contextEvents
-          ? this._contextEvents.push(event)
-          : this._contextEvents = [event];
+      if (this._isActionInProgress) {
+        if (emitEvent) {
+          this._contextEvents
+            ? this._contextEvents.push(event)
+            : this._contextEvents = [event];
+        }
+        this._context = newState;
         return newState;
       }
 
+      this._context = null;
       this._state = newState;
 
       if (this._contextEvents) {
@@ -470,7 +484,10 @@ class ScopeImpl<T> implements Scope<T> {
       if (event.childrenEvents) {
         event.childrenEvents.forEach(dispatchEvent);
       }
-      dispatchEvent(event);
+
+      if (emitEvent) {
+        dispatchEvent(event);
+      }
 
       this._isActionDispatchAvailable = true;
 
@@ -495,6 +512,7 @@ class ScopeImpl<T> implements Scope<T> {
 
     try {
       this._isActionInProgress = true;
+      this._context = oldState;
       const actionResult = action(oldState, props);
       this._isActionInProgress = false;
       return onFulfilled(actionResult);
