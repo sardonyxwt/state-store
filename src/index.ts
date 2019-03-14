@@ -270,8 +270,8 @@ export interface StoreDevTool {
 
 }
 
-const generateScopeName = createUniqueIdGenerator();
-const generateScopeListenerId = createUniqueIdGenerator();
+const generateScopeName = createUniqueIdGenerator('Scope');
+const generateScopeListenerId = createUniqueIdGenerator('ScopeListener');
 
 let storeDevTool: StoreDevTool = {
   onCreate: () => null,
