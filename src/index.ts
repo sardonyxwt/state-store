@@ -1,5 +1,5 @@
 import {deepFreeze} from '@sardonyxwt/utils/object';
-import {uniqueId} from '@sardonyxwt/utils/generator';
+import {createUniqueIdGenerator} from '@sardonyxwt/utils/generator';
 
 /**
  * @type ScopeConfig
@@ -270,6 +270,9 @@ export interface StoreDevTool {
 
 }
 
+const generateScopeName = createUniqueIdGenerator();
+const generateScopeListenerId = createUniqueIdGenerator();
+
 let storeDevTool: StoreDevTool = {
   onCreate: () => null,
   onChange: () => null,
@@ -536,7 +539,7 @@ class ScopeImpl<T> implements Scope<T> {
       }
     });
 
-    const listenerId = uniqueId('listener');
+    const listenerId = generateScopeListenerId();
     this._listeners[listenerId] = event => {
 
       if (actionNames.length === 0) {
@@ -663,7 +666,7 @@ const scopes: { [key: string]: Scope<any> } = {};
  */
 export function createScope<T>(config: ScopeConfig<T> = {}): Scope<T> {
   const {
-    name = uniqueId('scope'),
+    name = generateScopeName(),
     initState = null,
     middleware = [],
     isSubscribeMacroAutoCreateEnable = false,
@@ -691,7 +694,7 @@ export function composeScope<T = {}>(
   scopes: (Scope | string)[],
   config: ScopeConfig<T> = {},
 ): Scope<T> {
-  const {name = uniqueId('scope'), middleware = [], isSubscribeMacroAutoCreateEnable = false} = config;
+  const {name = generateScopeName(), middleware = [], isSubscribeMacroAutoCreateEnable = false} = config;
   if (name in scopes) {
     throw new Error(`Scope name must unique`);
   }
