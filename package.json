@@ -1,6 +1,6 @@
 {
   "name": "@sardonyxwt/state-store",
-  "version": "4.4.3",
+  "version": "4.4.4",
   "description": "State store",
   "keywords": [
     "sclib",
@@ -42,7 +42,7 @@
     "testRegex": "/(test|src)/.*\\.(test|spec)\\.(ts|js)$"
   },
   "dependencies": {
-    "@sardonyxwt/utils": "2.1.0"
+    "@sardonyxwt/utils": "2.1.1"
   },
   "devDependencies": {
     "@types/jest": "^21.1.9",
