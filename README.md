@@ -94,14 +94,14 @@ counterScope.lock();
 console.log(counterScope.isLocked);
 
 // You can use subscribe() to update the UI in response to state changes.
-let allActionListenerId = counterScope.subscribe(
+let allActionListenerUnsubscribeCallback = counterScope.subscribe(
   ({oldScope, newScope, scopeName, actionName, props}) => {
     console.log(oldScope, newScope, scopeName, actionName, props)
   }
 );
 
 // You can use subscribe() with specific actionName (you can use array of actions) to handle only this action.
-let setCounterActionListenerId = counterScope.subscribe(
+let setCounterActionUnsubscribeCallback = counterScope.subscribe(
   () => console.log('set counter value action dispatch.'),
   SET_COUNTER_ACTION
 );
@@ -109,10 +109,10 @@ let setCounterActionListenerId = counterScope.subscribe(
 let syncObject1 = {}, syncObject2 = {};
 
 // You can use synchronize() to synchronize the object with scope state.
-let synchronizeObject1Id = counterScope.synchronize(syncObject1, 'state');
+let synchronizeObject1UnsubscribeCallback = counterScope.synchronize(syncObject1, 'state');
 
 // You can use synchronize() with specific actionName to handle only this action.
-let synchronizeObject2Id = counterScope.synchronize(syncObject2, 'state', INCREMENT_ACTION);
+let synchronizeObject2UnsubscribeCallback = counterScope.synchronize(syncObject2, 'state', INCREMENT_ACTION);
 
 // The only way to mutate the internal state in scope is to dispatch an action.
 counterScope.dispatch(INCREMENT_ACTION);
@@ -139,10 +139,10 @@ console.log(counterScope.remains(10000));
 // call getter count macro.
 console.log(counterScope.count);
 
-counterScope.unsubscribe(allActionListenerId);
-counterScope.unsubscribe(setCounterActionListenerId);
-counterScope.unsubscribe(synchronizeObject1Id);
-counterScope.unsubscribe(synchronizeObject2Id);
+counterScope.unsubscribe(allActionListenerUnsubscribeCallback.listenerId);
+setCounterActionUnsubscribeCallback();
+counterScope.unsubscribe(synchronizeObject1UnsubscribeCallback.listenerId);
+synchronizeObject2UnsubscribeCallback();
 
 console.log(counterScope.state);
 

@@ -39,6 +39,7 @@ export type ScopeError<T = any> = {
   actionName: string,
   props
 };
+export type ScopeListenerUnsubscribeCallback = (() => boolean) & {listenerId: string};
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export type ScopeAction<T, PROPS> = (state: T, props?: PROPS) => T;
 export type ScopeMacro<T, PROPS, OUT> = (state: T, props?: PROPS) => OUT;
@@ -153,10 +154,10 @@ export interface Scope<T = any> {
    * @description It will be called any time an action is dispatched.
    * @param {ScopeListener} listener A callback to be invoked on every dispatch.
    * @param {string | string[]} actionName Specific action to subscribe.
-   * @return {string} A listener id to remove this change listener later.
+   * @return {ScopeListenerUnsubscribeCallback} A listener unsubscribe callback to remove this change listener later.
    * @throws {Error} Will throw an error if actionName not present in scope.
    */
-  subscribe(listener: ScopeListener<T>, actionName?: string | string[]): string;
+  subscribe(listener: ScopeListener<T>, actionName?: string | string[]): ScopeListenerUnsubscribeCallback;
 
   /**
    * @function unsubscribe
@@ -174,12 +175,12 @@ export interface Scope<T = any> {
    * @param {string} key Object property key for synchronized.
    * If not specific use Object.getOwnPropertyNames to synchronize all properties.
    * @param {string} actionName Specific action to synchronize.
-   * @return {string} A listener id to remove this change listener later.
+   * @return {ScopeListenerUnsubscribeCallback} A listener unsubscribe callback to remove this change listener later.
    * @throws {Error} Will throw an errors:
    * - if actionName not present in scope.
    * - if {key} param not specified and state isn`t object.
    */
-  synchronize(object: object, key: string, actionName?: string): string;
+  synchronize(object: object, key: string, actionName?: string): ScopeListenerUnsubscribeCallback;
 
   /**
    * @function lock
@@ -524,7 +525,7 @@ class ScopeImpl<T> implements Scope<T> {
     }
   }
 
-  subscribe(listener: ScopeListener<T>, actionName?: string | string[]) {
+  subscribe(listener: ScopeListener<T>, actionName?: string | string[]): ScopeListenerUnsubscribeCallback {
     const actionNames: string[] = [];
 
     if (Array.isArray(actionName)) {
@@ -554,7 +555,8 @@ class ScopeImpl<T> implements Scope<T> {
         listener(event);
       }
     };
-    return listenerId;
+
+    return Object.assign(() => this.unsubscribe(listenerId), {listenerId});
   }
 
   synchronize(object: object, key?: string, actionName?: string) {

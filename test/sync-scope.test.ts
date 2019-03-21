@@ -44,7 +44,7 @@ describe('Scope', () => {
   it('subscribe', () => {
     listenerId = scope.subscribe(({newState}) => {
       expect(newState).toEqual(TEST_VALUE);
-    }, ACTION_NAME);
+    }, ACTION_NAME).listenerId;
   });
 
   it('synchronize', () => {
