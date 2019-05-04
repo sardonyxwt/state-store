@@ -355,13 +355,8 @@ export interface Store {
   lock(): void;
 }
 
-declare global {
-  let STORES: Store[];
-  let STORE_DEV_TOOL: StoreDevTool;
-}
-
-const stores: Store[] = STORES = STORES || [];
-const storeDevTool: StoreDevTool = STORE_DEV_TOOL = STORE_DEV_TOOL || {
+const stores: Store[] = [];
+const storeDevTool: StoreDevTool = {
   onCreateStore: () => null,
   onChangeStore: () => null,
   onCreateScope: () => null,

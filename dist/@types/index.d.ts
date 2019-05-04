@@ -305,10 +305,6 @@ export interface Store {
      */
     lock(): void;
 }
-declare global {
-    let STORES: Store[];
-    let STORE_DEV_TOOL: StoreDevTool;
-}
 /**
  * @function createStore
  * @summary Create a new store and return it.
