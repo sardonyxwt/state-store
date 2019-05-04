@@ -337,7 +337,7 @@ export interface Store {
    * @return {Scope} Scope.
    * @throws {Error} Will throw an error if name of scope not unique.
    */
-  createScope<T>(config?: ScopeConfig<T>): Scope<T>;
+  createScope<T = any>(config?: ScopeConfig<T>): Scope<T>;
 
   /**
    * @function getScope
@@ -346,7 +346,7 @@ export interface Store {
    * @return {Scope} Scope
    * @throws {Error} Will throw an error if scope not present.
    */
-  getScope<T = {}>(scopeName: string): Scope<T>;
+  getScope<T = any>(scopeName: string): Scope<T>;
 
   /**
    * @function lock
