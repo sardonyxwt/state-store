@@ -2,7 +2,7 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const plugins = [
-  new CleanWebpackPlugin('dist'),
+  new CleanWebpackPlugin({ dry: true }),
   new BundleAnalyzerPlugin({
     openAnalyzer: false,
     analyzerMode: 'static',
@@ -14,7 +14,7 @@ module.exports = {
   entry: './src/index.ts',
   devtool: 'source-map',
   output: {
-    filename: "./dist/state-store.min.js",
+    filename: "state-store.min.js",
     library: 'store',
     libraryTarget: 'umd',
     umdNamedDefine: true
@@ -26,7 +26,10 @@ module.exports = {
     rules: [
       {
         test: /\.ts$/,
-        loader: 'ts-loader'
+        loader: 'ts-loader',
+        options: {
+          configFile: "tsconfig.webpack.json"
+        }
       }
     ]
   },

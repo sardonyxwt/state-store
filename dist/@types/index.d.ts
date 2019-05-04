@@ -14,27 +14,39 @@
  * @default false.
  */
 export declare type ScopeConfig<T> = {
-    name?;
+    name?: string;
     initState?: T;
     middleware?: ScopeMiddleware<T>[];
     isSubscribeMacroAutoCreateEnable?: boolean;
+    isFrozen?: boolean;
+};
+/**
+ * @type StoreConfig
+ * @summary Store configuration
+ * @param {string} name The name of scope.
+ * @param {boolean} isFrozen Is store frozen.
+ * @default false.
+ */
+export declare type StoreConfig = {
+    name: string;
     isFrozen?: boolean;
 };
 export declare type ScopeEvent<T = any> = {
     newState: T;
     oldState: T;
     scopeName: string;
+    storeName: string;
     actionName: string;
-    props;
+    props: any;
     parentEvent?: ScopeEvent<T>;
     childrenEvents?: ScopeEvent<T>[];
 };
 export declare type ScopeError<T = any> = {
-    reason;
+    reason: any;
     oldState: T;
     scopeName: string;
     actionName: string;
-    props;
+    props: any;
 };
 export declare type ScopeListenerUnsubscribeCallback = (() => boolean) & {
     listenerId: string;
@@ -47,11 +59,11 @@ export declare type ScopeActionDispatcher<T, PROPS, OUT> = (props?: PROPS, emitE
 export declare enum ScopeMacroType {
     GETTER = "GETTER",
     SETTER = "SETTER",
-    FUNCTION = "FUNCTION",
+    FUNCTION = "FUNCTION"
 }
 /**
  * @interface Scope
- * @summary The whole state of your app is stored in an scopes inside a single store.
+ * @summary The whole state of your app is stored in an scopes.
  */
 export interface Scope<T = any> {
     /**
@@ -71,6 +83,11 @@ export interface Scope<T = any> {
      */
     readonly context: T;
     /**
+     * @var store
+     * @summary Scope parent store.
+     */
+    readonly store: Store;
+    /**
      * @var isLocked
      * @summary Is locked status.
      */
@@ -87,7 +104,7 @@ export interface Scope<T = any> {
     readonly isSubscribeMacroAutoCreateEnable: boolean;
     /**
      * @var supportActions
-     * @summary Returns support actions.
+     * @summary Support actions.
      */
     readonly supportActions: string[];
     /**
@@ -144,20 +161,6 @@ export interface Scope<T = any> {
      */
     unsubscribe(id: string): boolean;
     /**
-     * @function synchronize
-     * @summary Adds a scope synchronized listener.
-     * @description Synchronized listener will be called any time an action is dispatched.
-     * @param {object} object Object to synchronized.
-     * @param {string} key Object property key for synchronized.
-     * If not specific use Object.getOwnPropertyNames to synchronize all properties.
-     * @param {string} actionName Specific action to synchronize.
-     * @return {ScopeListenerUnsubscribeCallback} A listener unsubscribe callback to remove this change listener later.
-     * @throws {Error} Will throw an errors:
-     * - if actionName not present in scope.
-     * - if {key} param not specified and state isn`t object.
-     */
-    synchronize(object: object, key: string, actionName?: string): ScopeListenerUnsubscribeCallback;
-    /**
      * @function lock
      * @summary Prevents the addition of new actions to scope.
      */
@@ -186,7 +189,11 @@ export interface ScopeMiddleware<T> {
 export declare enum ScopeChangeEventType {
     REGISTER_MACRO = "REGISTER_MACRO",
     REGISTER_ACTION = "REGISTER_ACTION",
-    LOCK = "LOCK",
+    LOCK = "LOCK"
+}
+export declare enum StoreChangeEventType {
+    CREATE_SCOPE = "CREATE_SCOPE",
+    LOCK = "LOCK"
 }
 export interface ScopeChangeDetails {
     type: ScopeChangeEventType;
@@ -194,24 +201,41 @@ export interface ScopeChangeDetails {
     macroName?: string;
     macroType?: ScopeMacroType;
 }
+export interface StoreChangeDetails {
+    type: StoreChangeEventType;
+    scopeName?: string;
+}
 /**
  * @interface StoreDevTool
  * @summary You can use StoreDevTool to handle all action in store.
  */
 export interface StoreDevTool {
     /**
-     * @function onCreate
+     * @function onCreateStore
+     * @summary Call when created new store.
+     * @param {Store} store Created store.
+     */
+    onCreateStore(store: Store): void;
+    /**
+     * @function onChangeStore
+     * @summary Call when change store (lock, createScope).
+     * @param {Scope} store Changed store.
+     * @param {ScopeChangeDetails} details Additional store change details.
+     */
+    onChangeStore(store: Store, details: StoreChangeDetails): void;
+    /**
+     * @function onCreateScope
      * @summary Call when created new scope.
      * @param {Scope} scope Created scope.
      */
-    onCreate(scope: Scope): void;
+    onCreateScope(scope: Scope): void;
     /**
-     * @function onChange
+     * @function onChangeScope
      * @summary Call when change scope (lock, registerAction, dispatch).
      * @param {Scope} scope Changed scope.
      * @param {ScopeChangeDetails} details Additional scope change details.
      */
-    onChange(scope: Scope, details: ScopeChangeDetails): void;
+    onChangeScope(scope: Scope, details: ScopeChangeDetails): void;
     /**
      * @function onAction
      * @summary Call when in any scope dispatch action.
@@ -232,34 +256,79 @@ export interface StoreDevTool {
     onActionListenerError(error: ScopeError): void;
 }
 /**
- * @function createScope
- * @summary Create a new scope and return it.
- * @param {ScopeConfig} config The config of scope.
- * @return {Scope} Scope.
- * @throws {Error} Will throw an error if name of scope not unique.
+ * @interface Store
+ * @summary The whole state of your app is stored in an scopes inside a store.
  */
-export declare function createScope<T>(config?: ScopeConfig<T>): Scope<T>;
+export interface Store {
+    /**
+     * @var name.
+     * @summary Store name.
+     * @description Name unique for store.
+     */
+    readonly name: string;
+    /**
+     * @var isLocked
+     * @summary Is locked status.
+     */
+    readonly isLocked: boolean;
+    /**
+     * @var state
+     * @summary Store state.
+     */
+    readonly state: {
+        [scopeName: string]: any;
+    };
+    /**
+     * @var scopes
+     * @summary Store scopes.
+     */
+    readonly scopes: string[];
+    /**
+     * @function createScope
+     * @summary Create a new scope and return it.
+     * @param {ScopeConfig} config The config of scope.
+     * @return {Scope} Scope.
+     * @throws {Error} Will throw an error if name of scope not unique.
+     */
+    createScope<T>(config?: ScopeConfig<T>): Scope<T>;
+    /**
+     * @function getScope
+     * @summary Returns scope.
+     * @param {string} scopeName Name scope, to get the Scope.
+     * @return {Scope} Scope
+     * @throws {Error} Will throw an error if scope not present.
+     */
+    getScope<T = {}>(scopeName: string): Scope<T>;
+    /**
+     * @function lock
+     * @summary Prevents the creation of new scope to store and lock all included scopes.
+     */
+    lock(): void;
+}
+declare global {
+    let STORES: Store[];
+    let STORE_DEV_TOOL: StoreDevTool;
+}
 /**
- * @function composeScope
- * @summary Compose a new scope and return it.
- * @description Compose a new scope and return it. All scopes is auto lock.
- * @return {Scope} Compose scope.
- * @throws {Error} Will throw an error if scopes length less fewer than two.
- * @throws {Error} Will throw an error if name of scope not unique.
+ * @function createStore
+ * @summary Create a new store and return it.
+ * @param {StoreConfig} config Name of store.
+ * @return {Store} Store.
+ * @throws {Error} Will throw an error if name of store not unique.
  */
-export declare function composeScope<T = {}>(scopes: (Scope | string)[], config?: ScopeConfig<T>): Scope<T>;
+export declare function createStore(config: StoreConfig): Store;
 /**
- * @function getScope
- * @summary Returns scope.
- * @param {string} scopeName Name scope, to get the Scope.
- * @return {Scope} Scope
+ * @function getStore
+ * @summary Returns store.
+ * @param {string} storeName Name scope, to get the Scope.
+ * @return {Store} Store
  * @throws {Error} Will throw an error if scope not present.
  */
-export declare function getScope(scopeName: string): Scope<any>;
+export declare function getStore(storeName: string): Store;
 /**
  * @function getState
- * @summary Returns all scope states.
- * @return {{string: any}} Scope states
+ * @summary Returns all store states.
+ * @return {{string: {string: any}}} Scope states
  */
 export declare function getState(): {};
 /**

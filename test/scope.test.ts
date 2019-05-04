@@ -1,19 +1,13 @@
-/// <reference types="jest" />
-import {createScope, getState, Scope} from '../src';
+import {createStore, Scope} from '../src';
 
 describe('Scope', () => {
 
-  let scope: Scope<number>;
+  let store = createStore({name: 'TestStore'});
+  let scope: Scope<number> = store.createScope();
 
   let listenerId;
-  let objectSynchronizeId;
-  let synchronizeObject = {};
   const ACTION_NAME = 'action';
   const TEST_VALUE = 1000;
-
-  it('createScope', () => {
-    scope = createScope();
-  });
 
   it('registerAction', () => {
     scope.registerAction(ACTION_NAME, (state, props: number) => {
@@ -23,9 +17,9 @@ describe('Scope', () => {
 
   it('registerTransformer', () => {
     scope.registerMacro('sum', (state, props) => {
-      return props + state;
+      return props as any + state as any;
     });
-    expect(scope['sum'](2000)).toEqual(TEST_VALUE + 1000);
+    expect(scope['sum'](2000)).toEqual(2000);
   });
 
   it('lock', () => {
@@ -47,10 +41,6 @@ describe('Scope', () => {
     }, ACTION_NAME).listenerId;
   });
 
-  it('synchronize', () => {
-    objectSynchronizeId = scope.synchronize(synchronizeObject, 'state');
-  });
-
   it('dispatch', () => {
     const newScope = scope.dispatch(ACTION_NAME, TEST_VALUE);
     expect(newScope).toEqual(TEST_VALUE);
@@ -58,23 +48,10 @@ describe('Scope', () => {
 
   it('unsubscribe', () => {
     scope.unsubscribe(listenerId);
-    scope.unsubscribe(objectSynchronizeId);
   });
 
-  it('synchronize object check', () => {
-    const state = scope.state;
-    expect({state}).toEqual(synchronizeObject);
-  });
-
-  it('getScope', () => {
+  it('state', () => {
     expect(scope.state).toEqual(TEST_VALUE);
-  });
-
-  it('getState', () => {
-    const state = getState();
-    expect(state).toEqual({
-      [scope.name]: TEST_VALUE
-    });
   });
 
   it('getSupportActions', () => {

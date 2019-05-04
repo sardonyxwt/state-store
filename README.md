@@ -21,7 +21,43 @@ To specify how the actions transform the scope, you write pure *action* and regi
 That's it!
 
 ```js
-import {createScope, composeScope, setStoreDevTool} from '@sardonyxwt/state-store';
+import {createStore, setStoreDevTool} from '@sardonyxwt/state-store';
+
+// You can use setStoreDevTool to set middleware dev tool.
+setStoreDevTool({
+  // Call when created new store.
+  onCreateStore(store) {
+    console.log('Store with name: ' + store.name + ' created');
+  },
+  // Call when change store (createScope, lock).
+  onChangeStore(store, details) {
+    console.log('Store with name: ' + store.name + ' changed', {
+      scopes: store.scopes,
+      isLocked: store.isLocked,
+      state: store.state
+    }, 'details: ', details)
+  },
+  // Call when created new scope.
+  onCreateScope(scope) {
+    console.log('Scope with name: ' + scope.name + ' created');
+  },
+  // Call when change scope (registerAction, registerMacro, lock).
+  onChangeScope(scope, details) {
+    console.log('Scope with name: ' + scope.name + ' changed', {
+      supportActions: scope.supportActions,
+      isLocked: scope.isLocked,
+      state: scope.state
+    }, 'details: ', details)
+  },
+  // Call when in any scope dispatch action.
+  onAction(event) {
+    console.log('StoreAction: ', event)
+  },
+  // Call when in any scope dispatch action error.
+  onActionError(error) {
+    console.log('StoreActionError: ', error)
+  }
+});
 
 const INCREMENT_ACTION = 'increment';
 const DECREMENT_ACTION = 'decrement';
@@ -40,9 +76,12 @@ const logScopeMiddleware = {
   }
 };
 
+// Create a new store.
+const counterStore = createStore({name: 'CounterStore'});
+
 // Create a new scope.
-const counterScope = createScope({
-  name: 'counterScope', 
+const counterScope = counterStore.createScope({
+  name: 'CounterScope', 
   initState: 0, 
   middleware: [logScopeMiddleware]
 });
@@ -90,8 +129,14 @@ counterScope.registerMacro('count', (state) => {
 // You can use lock() to forbid add new action to scope.
 counterScope.lock();
 
+// You can use lock() to forbid create new scopes to store and lock all included scopes.
+counterStore.lock();
+
 // You can use isLocked to check is scope is lock.
 console.log(counterScope.isLocked);
+
+// You can use isLocked to check is store is lock.
+console.log(counterStore.isLocked);
 
 // You can use subscribe() to update the UI in response to state changes.
 let allActionListenerUnsubscribeCallback = counterScope.subscribe(
@@ -105,14 +150,6 @@ let setCounterActionUnsubscribeCallback = counterScope.subscribe(
   () => console.log('set counter value action dispatch.'),
   SET_COUNTER_ACTION
 );
-
-let syncObject1 = {}, syncObject2 = {};
-
-// You can use synchronize() to synchronize the object with scope state.
-let synchronizeObject1UnsubscribeCallback = counterScope.synchronize(syncObject1, 'state');
-
-// You can use synchronize() with specific actionName to handle only this action.
-let synchronizeObject2UnsubscribeCallback = counterScope.synchronize(syncObject2, 'state', INCREMENT_ACTION);
 
 // The only way to mutate the internal state in scope is to dispatch an action.
 counterScope.dispatch(INCREMENT_ACTION);
@@ -141,45 +178,15 @@ console.log(counterScope.count);
 
 counterScope.unsubscribe(allActionListenerUnsubscribeCallback.listenerId);
 setCounterActionUnsubscribeCallback();
-counterScope.unsubscribe(synchronizeObject1UnsubscribeCallback.listenerId);
-synchronizeObject2UnsubscribeCallback();
 
 console.log(counterScope.state);
-
+console.log(counterStore.state);
 
 // You can use getSupportActions to get supported actions of scope.
 console.log(counterScope.supportActions);
 
-// You can use composeScope to create compose scope.
-const composedScope = composeScope('ComposeScope', [counterScope]);
-
-composedScope.dispatch(SET_COUNTER_ACTION, 2000);
-
-console.log(composedScope.state);
-
-// You can use setStoreDevTool to set middleware dev tool.
-setStoreDevTool({
-  //Call when created new scope.
-  onCreate(scope) {
-    console.log('Scope with name: ' + scope.name + ' created');
-  },
-  //Call when change scope (registerAction, registerMacro, lock).
-  onChange(scope, details) {
-    console.log('Scope with name: ' + scope.name + ' changed', {
-      supportActions: scope.supportActions,
-      isLock: scope.isLocked,
-      state: scope.state
-    }, 'details: ', details)
-  },
-  //Call when in any scope dispatch action.
-  onAction(event) {
-    console.log('StoreAction: ', event)
-  },
-  //Call when in any scope dispatch action error.
-  onActionError(error) {
-    console.log('StoreActionError: ', error)
-  }
-});
+// You can use counterStore.scopes to get all scopes of store.
+console.log(counterStore.scopes);
 ```
 
 ### License

@@ -1,6 +1,6 @@
 {
   "name": "@sardonyxwt/state-store",
-  "version": "4.5.1",
+  "version": "5.0.0",
   "description": "State store",
   "keywords": [
     "sclib",
@@ -26,35 +26,26 @@
   },
   "scripts": {
     "build": "cross-env NODE_ENV='production' webpack -p",
-    "test": "cross-env-shell webpack && jest",
+    "test": "cross-env-shell webpack -p && jest",
     "lint": "tslint -p . -c tslint.json --fix -t verbose",
     "deploy": "cross-env-shell npm run build && npm publish --access public"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "ts",
-      "js"
-    ],
-    "transform": {
-      "\\.(ts|tsx)$": "<rootDir>/node_modules/ts-jest/preprocessor.js"
-    },
-    "mapCoverage": true,
-    "testRegex": "/(test|src)/.*\\.(test|spec)\\.(ts|js)$"
   },
   "dependencies": {
     "@sardonyxwt/utils": "2.1.1"
   },
   "devDependencies": {
-    "@types/jest": "^21.1.9",
-    "@types/node": "^8.0.47",
-    "clean-webpack-plugin": "0.1.17",
-    "cross-env": "5.1.1",
-    "jest": "^22.0.4",
-    "ts-jest": "^22.0.0",
-    "ts-loader": "^3.4.0",
-    "tslint": "^5.8.0",
-    "typescript": "^2.6.0",
-    "webpack": "^3.6.0",
-    "webpack-bundle-analyzer": "^2.9.1"
+    "@types/jest": "^24.0.12",
+    "@types/node": "^11.13.9",
+    "clean-webpack-plugin": "2.0.1",
+    "cross-env": "5.2.0",
+    "jest": "^24.7.1",
+    "ts-jest": "^24.0.2",
+    "ts-loader": "^5.4.5",
+    "tsconfig-paths-jest": "0.0.1",
+    "tslint": "^5.16.0",
+    "typescript": "^3.4.5",
+    "webpack": "^4.30.0",
+    "webpack-bundle-analyzer": "^3.3.2",
+    "webpack-cli": "^3.3.1"
   }
 }

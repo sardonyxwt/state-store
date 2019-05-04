@@ -1,5 +1,4 @@
-/// <reference types="jest" />
-import {Scope, ScopeError, ScopeEvent, setStoreDevTool} from "../src";
+import {Scope, Store, ScopeError, ScopeEvent, setStoreDevTool} from "../src";
 
 describe('Scope', () => {
 
@@ -11,10 +10,16 @@ describe('Scope', () => {
       onActionError(error: ScopeError) {
 
       },
-      onChange(scope: Scope) {
+      onChangeScope(scope: Scope) {
 
       },
-      onCreate(scope: Scope) {
+      onCreateScope(scope: Scope) {
+
+      },
+      onCreateStore(store: Store) {
+
+      },
+      onChangeStore(store: Store) {
 
       }
     });

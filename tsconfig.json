@@ -8,6 +8,7 @@
     "lib": [
       "es2015"
     ],
+    "baseUrl": ".",
     "noImplicitAny": false,
     "suppressImplicitAnyIndexErrors": true,
     "typeRoots": [
@@ -18,7 +19,8 @@
     "declarationDir": "dist/@types/"
   },
   "include": [
-    "src"
+    "src",
+    "test"
   ],
   "exclude": [
     "node_modules"
