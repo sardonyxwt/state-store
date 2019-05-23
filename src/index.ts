@@ -191,6 +191,12 @@ export interface Scope<T = any> {
    */
   lock(): void;
 
+  /**
+   * @function reset
+   * @summary Reset scope state.
+   */
+  reset(): void;
+
 }
 
 /**
@@ -353,6 +359,13 @@ export interface Store {
    * @summary Prevents the creation of new scope to store and lock all included scopes.
    */
   lock(): void;
+
+  /**
+   * @function reset
+   * @summary Reset scopes state.
+   */
+  reset(): void;
+
 }
 
 const stores: Store[] = [];
@@ -369,6 +382,7 @@ const storeDevTool: StoreDevTool = {
 class ScopeImpl<T> implements Scope<T> {
 
   private readonly _name: string;
+  private readonly _initState: T;
   private _state: T;
   private _context: T;
   private _store: Store;
@@ -385,6 +399,7 @@ class ScopeImpl<T> implements Scope<T> {
   constructor(store: Store, config: ScopeConfig<T>) {
     const {name, initState, middleware, isSubscribeMacroAutoCreateEnable, isFrozen} = config;
     this._name = name;
+    this._initState =  initState;
     this._state = initState;
     this._store = store;
     // This code needed to save middleware correct order in dispatch method.
@@ -660,6 +675,10 @@ class ScopeImpl<T> implements Scope<T> {
     storeDevTool.onChangeScope(this, {type: ScopeChangeEventType.LOCK});
   }
 
+  reset() {
+    this._state = this._initState;
+  }
+
 }
 
 class StoreImpl implements Store {
@@ -737,6 +756,10 @@ class StoreImpl implements Store {
     this._isFrozen = true;
     this._scopes.forEach(it => it.lock());
     storeDevTool.onChangeStore(this, {type: StoreChangeEventType.LOCK});
+  }
+
+  reset() {
+    this._scopes.forEach(it => it.reset());
   }
 
 }

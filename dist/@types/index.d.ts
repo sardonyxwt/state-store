@@ -165,6 +165,11 @@ export interface Scope<T = any> {
      * @summary Prevents the addition of new actions to scope.
      */
     lock(): void;
+    /**
+     * @function reset
+     * @summary Reset scope state.
+     */
+    reset(): void;
 }
 /**
  * @interface ScopeMiddleware
@@ -304,6 +309,11 @@ export interface Store {
      * @summary Prevents the creation of new scope to store and lock all included scopes.
      */
     lock(): void;
+    /**
+     * @function reset
+     * @summary Reset scopes state.
+     */
+    reset(): void;
 }
 /**
  * @function createStore

@@ -59,4 +59,10 @@ describe('Scope', () => {
       .toEqual([ACTION_NAME]);
   });
 
+  it('reset', () => {
+    scope.reset();
+    expect(scope.state).toEqual(null);
+  });
+
+
 });

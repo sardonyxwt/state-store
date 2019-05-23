@@ -187,6 +187,12 @@ console.log(counterScope.supportActions);
 
 // You can use counterStore.scopes to get all scopes of store.
 console.log(counterStore.scopes);
+
+// You can use reset to set scopes state to init state.
+counterStore.reset();
+
+// You can use reset to set state to init state.
+counterScope.reset();
 ```
 
 ### License
