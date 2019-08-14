@@ -21,7 +21,7 @@ To specify how the actions transform the scope, you write pure *action* and regi
 That's it!
 
 ```js
-import {createStore, setStoreDevTool} from '@sardonyxwt/state-store';
+import {createStore, isStoreExist, getStore, setStoreDevTool} from '@sardonyxwt/state-store';
 
 // You can use setStoreDevTool to set middleware dev tool.
 setStoreDevTool({
@@ -78,6 +78,12 @@ const logScopeMiddleware = {
 
 // Create a new store.
 const counterStore = createStore({name: 'CounterStore'});
+
+// You can use isStoreExist to check is store exist
+console.log('Store is present: ', isStoreExist('CounterStore'));
+
+// You can use getStore to get store
+console.log('Store: ', getStore('CounterStore'));
 
 // Create a new scope.
 const counterScope = counterStore.createScope({

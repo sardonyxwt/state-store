@@ -316,6 +316,13 @@ export interface Store {
     reset(): void;
 }
 /**
+ * @function isStoreExist
+ * @summary Check is store exist.
+ * @param {string} storeName Name of store.
+ * @return {boolean} Status of store exist.
+ */
+export declare function isStoreExist(storeName: string): boolean;
+/**
  * @function createStore
  * @summary Create a new store and return it.
  * @param {StoreConfig} config Name of store.

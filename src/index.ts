@@ -765,6 +765,16 @@ class StoreImpl implements Store {
 }
 
 /**
+ * @function isStoreExist
+ * @summary Check is store exist.
+ * @param {string} storeName Name of store.
+ * @return {boolean} Status of store exist.
+ */
+export function isStoreExist(storeName: string) {
+  return !!stores.find(it => it.name === storeName);
+}
+
+/**
  * @function createStore
  * @summary Create a new store and return it.
  * @param {StoreConfig} config Name of store.
@@ -776,8 +786,7 @@ export function createStore(config: StoreConfig): Store {
     name,
     isFrozen = false,
   } = config;
-  const isStoreExist = !!stores.find(it => it.name === name);
-  if (isStoreExist) {
+  if (isStoreExist(name)) {
     throw new Error('Store name must unique');
   }
   const store = new StoreImpl({name, isFrozen});
@@ -794,11 +803,10 @@ export function createStore(config: StoreConfig): Store {
  * @throws {Error} Will throw an error if scope not present.
  */
 export function getStore(storeName: string): Store {
-  const store = stores.find(it => it.name === storeName);
-  if (!store) {
+  if (!isStoreExist(storeName)) {
     throw new Error(`Store with name ${storeName} not present`);
   }
-  return store;
+  return stores.find(it => it.name === storeName);
 }
 
 /**

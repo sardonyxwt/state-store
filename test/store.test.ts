@@ -1,4 +1,4 @@
-import {createStore, Scope, Store} from '../src';
+import {createStore, isStoreExist, getStore, Scope, Store} from '../src';
 
 describe('Store', () => {
 
@@ -7,6 +7,15 @@ describe('Store', () => {
 
   it('createStore', () => {
     store = createStore({name: 'TestStore'});
+  });
+
+  it('isStoreExist', () => {
+    expect(isStoreExist('TestStore')).toBeTruthy();
+    expect(isStoreExist('NotPresentStoreName')).toBeFalsy();
+  });
+
+  it('getStore', () => {
+    getStore('TestStore');
   });
 
   it('createScope', () => {
