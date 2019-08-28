@@ -64,5 +64,4 @@ describe('Scope', () => {
     expect(scope.state).toEqual(null);
   });
 
-
 });

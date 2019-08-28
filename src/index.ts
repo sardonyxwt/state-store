@@ -13,15 +13,18 @@ import {createUniqueIdGenerator} from '@sardonyxwt/utils/generator';
  * @default Empty array.
  * @param {boolean} isSubscribeMacroAutoCreateEnable Is create subscribe macro when register action.
  * @default false.
+ * @param {boolean} isImmutabilityEnabled Is use deepFreeze for state and action props.
+ * @default false.
  * @param {boolean} isFrozen Is scope frozen.
  * @default false.
  */
 export type ScopeConfig<T> = {
-  name?: string,
-  initState?: T,
-  middleware?: ScopeMiddleware<T>[],
-  isSubscribeMacroAutoCreateEnable?: boolean,
-  isFrozen?: boolean
+  name?: string;
+  initState?: T;
+  middleware?: ScopeMiddleware<T>[];
+  isSubscribedMacroAutoCreateEnabled?: boolean;
+  isImmutabilityEnabled?: boolean;
+  isFrozen?: boolean;
 };
 /**
  * @type StoreConfig
@@ -31,25 +34,25 @@ export type ScopeConfig<T> = {
  * @default false.
  */
 export type StoreConfig = {
-  name: string,
-  isFrozen?: boolean
+  name: string;
+  isFrozen?: boolean;
 };
 export type ScopeEvent<T = any> = {
-  newState: T,
-  oldState: T,
-  scopeName: string,
-  storeName: string,
-  actionName: string,
-  props,
-  parentEvent?: ScopeEvent<T>,
-  childrenEvents?: ScopeEvent<T>[]
+  newState: T;
+  oldState: T;
+  scopeName: string;
+  storeName: string;
+  actionName: string;
+  props;
+  parentEvent?: ScopeEvent<T>;
+  childrenEvents?: ScopeEvent<T>[];
 };
 export type ScopeError<T = any> = {
-  reason,
-  oldState: T,
-  scopeName: string,
-  actionName: string,
-  props
+  reason;
+  oldState: T;
+  scopeName: string;
+  actionName: string;
+  props;
 };
 export type ScopeListenerUnsubscribeCallback = (() => boolean) & {listenerId: string};
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
@@ -108,10 +111,10 @@ export interface Scope<T = any> {
   readonly isActionDispatchAvailable: boolean;
 
   /**
-   * @var isSubscribeMacroAutoCreateEnable
-   * @summary Is subscribe macro auto create enable.
+   * @var isSubscribedMacroAutoCreateEnabled
+   * @summary Is subscribe macro auto create enabled.
    */
-  readonly isSubscribeMacroAutoCreateEnable: boolean;
+  readonly isSubscribedMacroAutoCreateEnabled: boolean;
 
   /**
    * @var supportActions
@@ -389,7 +392,8 @@ class ScopeImpl<T> implements Scope<T> {
   private _isFrozen: boolean;
   private _isActionInProgress: boolean = false;
   private _isActionDispatchAvailable: boolean = true;
-  private readonly _isSubscribeMacroAutoCreateEnable: boolean;
+  private readonly _isImmutabilityEnabled: boolean;
+  private readonly _isSubscribedMacroAutoCreateEnabled: boolean;
   private _middleware: ScopeMiddleware<T>[];
   private _actions: { [key: string]: ScopeAction<T, any> } = {};
   private _listeners: { [key: string]: ScopeListener<T> } = {};
@@ -397,14 +401,15 @@ class ScopeImpl<T> implements Scope<T> {
   private readonly _listenerIdGenerator = createUniqueIdGenerator('ScopeListener');
 
   constructor(store: Store, config: ScopeConfig<T>) {
-    const {name, initState, middleware, isSubscribeMacroAutoCreateEnable, isFrozen} = config;
+    const {name, initState, middleware, isImmutabilityEnabled, isSubscribedMacroAutoCreateEnabled, isFrozen} = config;
     this._name = name;
     this._initState =  initState;
     this._state = initState;
     this._store = store;
     // This code needed to save middleware correct order in dispatch method.
     this._middleware = [...middleware].reverse();
-    this._isSubscribeMacroAutoCreateEnable = isSubscribeMacroAutoCreateEnable;
+    this._isImmutabilityEnabled = isImmutabilityEnabled;
+    this._isSubscribedMacroAutoCreateEnabled = isSubscribedMacroAutoCreateEnabled;
     this._isFrozen = isFrozen;
   }
 
@@ -420,8 +425,8 @@ class ScopeImpl<T> implements Scope<T> {
     return this._isActionDispatchAvailable;
   }
 
-  get isSubscribeMacroAutoCreateEnable() {
-    return this._isSubscribeMacroAutoCreateEnable;
+  get isSubscribedMacroAutoCreateEnabled() {
+    return this._isSubscribedMacroAutoCreateEnabled;
   }
 
   get state() {
@@ -443,25 +448,22 @@ class ScopeImpl<T> implements Scope<T> {
   registerAction<PROPS, TRANSFORMED_OUT = T>(
     actionName: string,
     action: ScopeAction<T, PROPS>,
-    transformer: ScopeActionResultTransformer<T, PROPS, TRANSFORMED_OUT>
-      = actionResult => <TRANSFORMED_OUT>(actionResult as any)
+    transformer?: ScopeActionResultTransformer<T, PROPS, TRANSFORMED_OUT>
   ) {
-    if (!transformer) {
-      throw new Error(`Transformer cannot be null or undefined.`);
-    }
     if (this._isFrozen) {
       throw new Error(`This scope is locked you can't add new action.`);
     }
-    if (actionName in this._actions || (this._isSubscribeMacroAutoCreateEnable && actionName in this)) {
+    if (actionName in this._actions || (this._isSubscribedMacroAutoCreateEnabled && actionName in this)) {
       throw new Error(`Action name ${actionName} is duplicate or reserved in scope ${this._name}.`);
     }
     this._actions[actionName] = action;
 
     const actionDispatcher = (props?: PROPS, emitEvent?: boolean) => {
-      return transformer(this.dispatch(actionName, props, emitEvent), props);
+      const dispatchResult = this.dispatch(actionName, props, emitEvent);
+      return transformer ? transformer(dispatchResult, props) : dispatchResult;
     };
 
-    if (this._isSubscribeMacroAutoCreateEnable) {
+    if (this._isSubscribedMacroAutoCreateEnabled) {
       const capitalizeFirstLetterActionName = () => {
         return actionName.charAt(0).toUpperCase() + actionName.slice(1);
       };
@@ -530,7 +532,7 @@ class ScopeImpl<T> implements Scope<T> {
       throw new Error('Now action dispatch not available. Other action spreads.');
     }
 
-    if (props && typeof props === 'object') {
+    if (this._isImmutabilityEnabled && props && typeof props === 'object') {
       deepFreeze(props);
     }
 
@@ -549,7 +551,9 @@ class ScopeImpl<T> implements Scope<T> {
     }) as ScopeError<T>;
 
     const onFulfilled = newState => {
-      deepFreeze(newState);
+      if (this._isImmutabilityEnabled) {
+        deepFreeze(newState);
+      }
       const event: ScopeEvent<T> = {
         oldState,
         newState,
@@ -723,7 +727,8 @@ class StoreImpl implements Store {
       name = this._scopeNameGenerator(),
       initState = null,
       middleware = [],
-      isSubscribeMacroAutoCreateEnable = false,
+      isImmutabilityEnabled = false,
+      isSubscribedMacroAutoCreateEnabled = false,
       isFrozen = false
     } = config;
     const isScopeExist = !!this._scopes.find(it => it.name === name);
@@ -734,7 +739,8 @@ class StoreImpl implements Store {
       name,
       initState,
       middleware: middleware as ScopeMiddleware<T>[],
-      isSubscribeMacroAutoCreateEnable,
+      isImmutabilityEnabled,
+      isSubscribedMacroAutoCreateEnabled,
       isFrozen
     });
     this._scopes.push(scope);

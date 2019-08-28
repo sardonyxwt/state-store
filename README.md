@@ -21,7 +21,7 @@ To specify how the actions transform the scope, you write pure *action* and regi
 That's it!
 
 ```js
-import {createStore, isStoreExist, getStore, setStoreDevTool} from '@sardonyxwt/state-store';
+import {createStore, isStoreExist, getStore, setStoreDevTool, ScopeMacroType} from '@sardonyxwt/state-store';
 
 // You can use setStoreDevTool to set middleware dev tool.
 setStoreDevTool({
@@ -104,7 +104,7 @@ counterScope.registerAction(
 );
 
 // You can save action dispatcher and call later.
-const setCouterActionDispatcher = counterScope.registerAction(
+const setCounterActionDispatcher = counterScope.registerAction(
   SET_COUNTER_ACTION,
   (scope, props) => {
     if(typeof props !== 'number') {
@@ -130,7 +130,7 @@ counterScope.registerMacro('remains', (state, props) => {
 // You can add macro as getter or setter type.
 counterScope.registerMacro('count', (state) => {
   return state;
-}, 'GETTER');
+}, ScopeMacroType.GETTER);
 
 // You can use lock() to forbid add new action to scope.
 counterScope.lock();
@@ -161,7 +161,7 @@ let setCounterActionUnsubscribeCallback = counterScope.subscribe(
 counterScope.dispatch(INCREMENT_ACTION);
 counterScope.dispatch(DECREMENT_ACTION);
 
-console.log(counterScope.dispatch(SET_COUNTER_ACTION, 1000))
+console.log(counterScope.dispatch(SET_COUNTER_ACTION, 1000));
 
 try {
   counterScope.dispatch(SET_COUNTER_ACTION, "invalid props")
@@ -170,7 +170,7 @@ try {
 }
 
 // dispatch action with action dispatcher.
-setCouterActionDispatcher(1000);
+setCounterActionDispatcher(1000);
 
 // or you can call action dispatcher like this.
 // The method name is the same as the action name.

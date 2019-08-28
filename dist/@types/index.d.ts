@@ -10,6 +10,8 @@
  * @default Empty array.
  * @param {boolean} isSubscribeMacroAutoCreateEnable Is create subscribe macro when register action.
  * @default false.
+ * @param {boolean} isImmutabilityEnabled Is use deepFreeze for state and action props.
+ * @default false.
  * @param {boolean} isFrozen Is scope frozen.
  * @default false.
  */
@@ -17,7 +19,8 @@ export declare type ScopeConfig<T> = {
     name?: string;
     initState?: T;
     middleware?: ScopeMiddleware<T>[];
-    isSubscribeMacroAutoCreateEnable?: boolean;
+    isSubscribedMacroAutoCreateEnabled?: boolean;
+    isImmutabilityEnabled?: boolean;
     isFrozen?: boolean;
 };
 /**
@@ -98,10 +101,10 @@ export interface Scope<T = any> {
      */
     readonly isActionDispatchAvailable: boolean;
     /**
-     * @var isSubscribeMacroAutoCreateEnable
-     * @summary Is subscribe macro auto create enable.
+     * @var isSubscribedMacroAutoCreateEnabled
+     * @summary Is subscribe macro auto create enabled.
      */
-    readonly isSubscribeMacroAutoCreateEnable: boolean;
+    readonly isSubscribedMacroAutoCreateEnabled: boolean;
     /**
      * @var supportActions
      * @summary Support actions.
