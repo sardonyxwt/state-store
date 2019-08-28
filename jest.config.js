@@ -8,7 +8,7 @@ module.exports = {
   reporters: [
     'default',
     ['./node_modules/jest-html-reporter', {
-      pageTitle: 'Webapp Test Report',
+      pageTitle: 'StateStore Test Report',
       outputPath: './report/test-report.html',
       includeFailureMsg: true,
       includeConsoleLog: true

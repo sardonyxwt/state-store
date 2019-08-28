@@ -4,8 +4,7 @@
 **/*.iml
 
 **/npm-debug.log
-**/test-report.json
-**/bundle-report.html
-**/etc/
-**/node/
-**/node_modules/
+report/
+etc/
+node/
+node_modules/
