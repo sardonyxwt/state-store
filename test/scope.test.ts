@@ -38,7 +38,7 @@ describe('Scope', () => {
     it('subscribe', () => {
         listenerId = scope.subscribe(({newState}) => {
             expect(newState).toEqual(TEST_VALUE);
-        }, ACTION_NAME).listenerId;
+        }, [ACTION_NAME]).listenerId;
     });
 
     it('dispatch', () => {

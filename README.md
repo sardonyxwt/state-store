@@ -151,10 +151,10 @@ let allActionListenerUnsubscribeCallback = counterScope.subscribe(
   }
 );
 
-// You can use subscribe() with specific actionName (you can use array of actions) to handle only this action.
+// You can use subscribe() with specific action names to handle only this actions.
 let setCounterActionUnsubscribeCallback = counterScope.subscribe(
   () => console.log('set counter value action dispatch.'),
-  SET_COUNTER_ACTION
+  [SET_COUNTER_ACTION]
 );
 
 // The only way to mutate the internal state in scope is to dispatch an action.

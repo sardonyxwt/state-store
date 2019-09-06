@@ -151,11 +151,11 @@ export interface Scope<T = any> {
      * @summary Adds a scope change listener.
      * @description It will be called any time an action is dispatched.
      * @param {ScopeListener} listener A callback to be invoked on every dispatch.
-     * @param {string | string[]} actionName Specific action to subscribe.
+     * @param {string[]} actionNames Specific actions to subscribe.
      * @return {ScopeListenerUnsubscribeCallback} A listener unsubscribe callback to remove this change listener later.
      * @throws {Error} Will throw an error if actionName not present in scope.
      */
-    subscribe(listener: ScopeListener<T>, actionName?: string | string[]): ScopeListenerUnsubscribeCallback;
+    subscribe(listener: ScopeListener<T>, actionNames?: string[]): ScopeListenerUnsubscribeCallback;
     /**
      * @function unsubscribe
      * @summary Removes a scope change listener.
@@ -287,11 +287,6 @@ export interface Store {
         [scopeName: string]: any;
     };
     /**
-     * @var scopes
-     * @summary Store scopes.
-     */
-    readonly scopes: string[];
-    /**
      * @function createScope
      * @summary Create a new scope and return it.
      * @param {ScopeConfig} config The config of scope.
@@ -303,10 +298,16 @@ export interface Store {
      * @function getScope
      * @summary Returns scope.
      * @param {string} scopeName Name scope, to get the Scope.
-     * @return {Scope} Scope
-     * @throws {Error} Will throw an error if scope not present.
+     * @return {Scope} Scope or null
      */
     getScope<T = any>(scopeName: string): Scope<T>;
+    /**
+     * @function hasScope
+     * @summary Returns a boolean indicating whether an Scope with the specified name exists or not in Store.
+     * @param {string} scopeName Name of scope, to check scope in store.
+     * @return {boolean} Exist status
+     */
+    hasScope(scopeName: string): boolean;
     /**
      * @function lock
      * @summary Prevents the creation of new scope to store and lock all included scopes.
@@ -337,8 +338,7 @@ export declare function createStore(config: StoreConfig): Store;
  * @function getStore
  * @summary Returns store.
  * @param {string} storeName Name scope, to get the Scope.
- * @return {Store} Store
- * @throws {Error} Will throw an error if scope not present.
+ * @return {Store} Store or null
  */
 export declare function getStore(storeName: string): Store;
 /**
