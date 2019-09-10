@@ -1,6 +1,6 @@
 {
     "name": "@sardonyxwt/state-store",
-    "version": "5.4.0",
+    "version": "5.4.1",
     "description": "State store",
     "keywords": [
         "sclib",
@@ -31,7 +31,7 @@
         "deploy": "cross-env-shell npm run build && npm publish --access public"
     },
     "dependencies": {
-        "@sardonyxwt/utils": "2.1.1"
+        "@sardonyxwt/utils": "3.2.1"
     },
     "devDependencies": {
         "@types/jest": "24.0.18",
