@@ -353,3 +353,4 @@ export declare function getState(): {};
  * @param {StoreDevTool} devTool Dev tool middleware, to handle store changes.
  */
 export declare function setStoreDevTool(devTool: Partial<StoreDevTool>): void;
+//# sourceMappingURL=index.d.ts.map
