@@ -348,10 +348,11 @@ export interface Store {
      * @function createScope
      * @summary Create a new scope and return it.
      * @param {ScopeConfig} config The config of scope.
+     * @param {boolean} useRestoredStateIfAvailable If true use restore state in store if available.
      * @return {Scope} Scope.
      * @throws {Error} Will throw an error if name of scope not unique.
      */
-    createScope<T = any>(config?: ScopeConfig<T>): Scope<T>;
+    createScope<T = any>(config?: ScopeConfig<T>, useRestoredStateIfAvailable?: boolean): Scope<T>;
 
     /**
      * @function getScope
@@ -419,7 +420,6 @@ class ScopeImpl<T> implements Scope<T> {
     private _context: T;
     private _isFrozen: boolean;
     private _isActionInProgress: boolean = false;
-    private _isActionDispatchAvailable: boolean = true;
 
     private _middleware: ScopeMiddleware<T>[];
     private _actions = new Map<string, ScopeAction<T, any>>();
@@ -453,7 +453,7 @@ class ScopeImpl<T> implements Scope<T> {
     }
 
     get isActionDispatchAvailable() {
-        return this._isActionDispatchAvailable;
+        return !this._isActionInProgress;
     }
 
     get state() {
@@ -551,7 +551,7 @@ class ScopeImpl<T> implements Scope<T> {
             throw new Error(`This action not exists ${actionName}`);
         }
 
-        if (!this._isActionDispatchAvailable) {
+        if (this._isActionInProgress) {
             throw new Error('Now action dispatch not available. Other action spreads.');
         }
 
@@ -605,7 +605,6 @@ class ScopeImpl<T> implements Scope<T> {
             }
 
             this._contextEvents = null;
-            this._isActionDispatchAvailable = false;
 
             const dispatchEvent = (event: ScopeEvent<T>) => {
                 storeDevTool.onAction(event);
@@ -626,8 +625,6 @@ class ScopeImpl<T> implements Scope<T> {
                 }
                 dispatchEvent(event);
             }
-
-            this._isActionDispatchAvailable = true;
 
             return newState;
         };
@@ -690,6 +687,7 @@ class ScopeImpl<T> implements Scope<T> {
 
     lock() {
         this._isFrozen = true;
+
         storeDevTool.onChangeScope(this, {type: ScopeChangeEventType.LOCK});
     }
 
@@ -708,6 +706,7 @@ class StoreImpl implements Store {
     public readonly name: string;
 
     private readonly _scopes = new Map<string, Scope>();
+    private readonly _statesToRestore = new Map<string, any>();
     private readonly _scopeNameGenerator = createUniqueIdGenerator('Scope');
     private _isFrozen: boolean;
 
@@ -722,16 +721,19 @@ class StoreImpl implements Store {
 
     get state() {
         const state = {};
+
         this._scopes.forEach(scope => {
             state[scope.name] = scope.state;
         });
+
         return state;
     }
 
-    createScope<T>(config: ScopeConfig<T> = {}): Scope<T> {
+    createScope<T>(config: ScopeConfig<T> = {}, useRestoredStateIfAvailable?: boolean): Scope<T> {
         if (this._isFrozen) {
             throw new Error(`This Store is locked you can't add new scope.`);
         }
+
         const {
             name = this._scopeNameGenerator(),
             initState = null,
@@ -740,21 +742,35 @@ class StoreImpl implements Store {
             isSubscribedMacroAutoCreateEnabled = false,
             isFrozen = false
         } = config;
+
         if (this._scopes.has(name)) {
             throw new Error(`Scope name must unique`);
         }
+
+        const useRestoredState = useRestoredStateIfAvailable && this._statesToRestore.has(name);
+        const state = useRestoredState
+            ? this._statesToRestore.get(name)
+            : initState;
+        if (useRestoredState) {
+            this._statesToRestore.delete(name);
+        }
+
         let scope = new ScopeImpl<T>(this, {
             name,
-            initState,
+            initState: state,
             middleware: middleware as ScopeMiddleware<T>[],
             isImmutabilityEnabled,
             isSubscribedMacroAutoCreateEnabled,
             isFrozen
         });
+
         this._scopes.set(name, scope);
+
         middleware.forEach(middleware => middleware.postSetup(scope));
+
         storeDevTool.onCreateScope(scope);
         storeDevTool.onChangeStore(this, {type: StoreChangeEventType.CREATE_SCOPE, scopeName: name});
+
         return scope;
     }
 
@@ -778,7 +794,11 @@ class StoreImpl implements Store {
 
     restore(states: Map<string, any>) {
         states.forEach(
-            (restoredState, scopeName) => this.getScope(scopeName).restore(restoredState)
+            (restoredState, scopeName) => {
+                this.hasScope(scopeName)
+                    ? this.getScope(scopeName).restore(restoredState)
+                    : this._statesToRestore.set(scopeName, restoredState);
+            }
         );
     }
 
@@ -803,12 +823,15 @@ export function isStoreExist(storeName: string) {
  */
 export function createStore(config: StoreConfig): Store {
     const {name, isFrozen = false} = config;
+
     if (isStoreExist(name)) {
         throw new Error('Store name must unique');
     }
+
     const store = new StoreImpl({name, isFrozen});
     stores.set(name, store);
     storeDevTool.onCreateStore(store);
+
     return store;
 }
 
@@ -829,9 +852,11 @@ export function getStore(storeName: string): Store {
  */
 export function getState() {
     const state = {};
+
     stores.forEach(store => {
         state[store.name] = store.state;
     });
+
     return state;
 }
 

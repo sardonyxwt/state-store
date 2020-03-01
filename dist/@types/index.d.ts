@@ -300,10 +300,11 @@ export interface Store {
      * @function createScope
      * @summary Create a new scope and return it.
      * @param {ScopeConfig} config The config of scope.
+     * @param {boolean} useRestoredStateIfAvailable If true use restore state in store if available.
      * @return {Scope} Scope.
      * @throws {Error} Will throw an error if name of scope not unique.
      */
-    createScope<T = any>(config?: ScopeConfig<T>): Scope<T>;
+    createScope<T = any>(config?: ScopeConfig<T>, useRestoredStateIfAvailable?: boolean): Scope<T>;
     /**
      * @function getScope
      * @summary Returns scope.
