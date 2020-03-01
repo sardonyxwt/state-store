@@ -417,14 +417,14 @@ class ScopeImpl<T> implements Scope<T> {
 
     private _state: T;
     private _initState: T;
-    private _context: T;
     private _isFrozen: boolean;
+    private _context: T = null;
+    private _contextEvent: ScopeEvent<T> = null;
     private _isActionInProgress: boolean = false;
 
     private _middleware: ScopeMiddleware<T>[];
     private _actions = new Map<string, ScopeAction<T, any>>();
     private _listeners = new Map<string, ScopeListener<T>>();
-    private _contextEvents: ScopeEvent<T>[] = null;
     private readonly _listenerIdGenerator = createUniqueIdGenerator('ScopeListener');
 
     constructor(store: Store, config: ScopeConfig<T>) {
@@ -563,67 +563,66 @@ class ScopeImpl<T> implements Scope<T> {
             middleware => action = middleware.appendActionMiddleware(action)
         );
 
-        const oldState = this._isActionInProgress ? this._context : this._state;
+        const isRootAction = !this._isActionInProgress;
 
-        const buildScopeError = (reason) => ({
+        if (isRootAction) {
+            this._isActionInProgress = true;
+        }
+
+        const oldState = isRootAction ? this._state : this._context;
+
+        const buildScopeError = (reason): ScopeError<T> => ({
             reason,
             oldState,
             scopeName: this.name,
             actionName,
             props
-        }) as ScopeError<T>;
+        });
+
+        const buildScopeEvent = (newState: T): ScopeEvent<T> => ({
+            props,
+            oldState,
+            newState,
+            actionName,
+            parentEvent: this._contextEvent ?? null,
+            scopeName: this.name,
+            storeName: this.store.name,
+            childrenEvents: []
+        });
 
         const onFulfilled = newState => {
             if (this.isImmutabilityEnabled && !!newState && typeof props === 'object') {
                 deepFreeze(newState);
             }
-            const event: ScopeEvent<T> = {
-                oldState,
-                newState,
-                scopeName: this.name,
-                storeName: this.store.name,
-                actionName,
-                props
-            };
 
-            if (this._isActionInProgress) {
-                if (emitEvent) {
-                    this._contextEvents
-                        ? this._contextEvents.push(event)
-                        : this._contextEvents = [event];
-                }
-                this._context = newState;
-                return newState;
+            this._context = newState;
+
+            if (emitEvent) {
+                isRootAction
+                    ? this._contextEvent = buildScopeEvent(newState)
+                    : this?._contextEvent.childrenEvents.push(buildScopeEvent(newState));
             }
-
-            this._context = null;
-            this._state = newState;
-
-            if (this._contextEvents) {
-                event.childrenEvents = this._contextEvents
-                    .map(contextEvent => ({...contextEvent, parentEvent: event}));
-            }
-
-            this._contextEvents = null;
 
             const dispatchEvent = (event: ScopeEvent<T>) => {
                 storeDevTool.onAction(event);
                 this._listeners.forEach(listener => {
                     try {
-                        if (listener) {
-                            listener(event);
-                        }
+                        listener?.(event);
                     } catch (reason) {
                         storeDevTool.onActionListenerError(buildScopeError(reason));
                     }
                 });
             };
 
-            if (emitEvent) {
-                if (event.childrenEvents) {
-                    event.childrenEvents.forEach(dispatchEvent);
+            if (isRootAction) {
+                this._state = newState;
+                if (this._contextEvent) {
+                    this._contextEvent.childrenEvents.forEach(dispatchEvent);
+                    dispatchEvent(this._contextEvent);
                 }
-                dispatchEvent(event);
+                this._context = null;
+                this._contextEvent = null;
+                this._isActionInProgress = false;
             }
 
             return newState;
@@ -631,28 +630,15 @@ class ScopeImpl<T> implements Scope<T> {
 
         const onRejected = reason => {
             const error = buildScopeError(reason);
-            if (!this._isActionInProgress) {
+            if (isRootAction) {
                 storeDevTool.onActionError(error);
             }
             return error;
         };
 
-        if (this._isActionInProgress) {
-            try {
-                return onFulfilled(action(oldState, props));
-            } catch (e) {
-                throw onRejected(e);
-            }
-        }
-
         try {
-            this._isActionInProgress = true;
-            this._context = oldState;
-            const actionResult = action(oldState, props);
-            this._isActionInProgress = false;
-            return onFulfilled(actionResult);
+            return onFulfilled(action(oldState, props));
         } catch (e) {
-            this._isActionInProgress = false;
             throw onRejected(e);
         }
     }
