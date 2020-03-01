@@ -1,4 +1,4 @@
-import {createStore, Scope} from '../src';
+import {createStore, RESET_SCOPE_ACTION, RESTORE_SCOPE_ACTION, Scope, ScopeMacroType} from '../src';
 
 describe('Scope', () => {
 
@@ -7,12 +7,19 @@ describe('Scope', () => {
 
     let listenerId;
     const ACTION_NAME = 'action';
+    const MACRO_NAME = 'plus';
     const TEST_VALUE = 1000;
 
     it('registerAction', () => {
         scope.registerAction(ACTION_NAME, (state, props: number) => {
             return props;
         });
+    });
+
+    it('registerMacro', () => {
+        scope.registerMacro(MACRO_NAME, (state, props: number) => {
+            return state + props;
+        }, ScopeMacroType.FUNCTION);
     });
 
     it('registerTransformer', () => {
@@ -46,6 +53,10 @@ describe('Scope', () => {
         expect(newScope).toEqual(TEST_VALUE);
     });
 
+    it("testMacro", () => {
+        expect((scope as typeof scope & {plus: (value: number) => number}).plus(1000)).toEqual(2000);
+    });
+
     it('unsubscribe', () => {
         scope.unsubscribe(listenerId);
     });
@@ -55,13 +66,19 @@ describe('Scope', () => {
     });
 
     it('getSupportActions', () => {
-        expect(scope.supportActions)
-            .toEqual([ACTION_NAME]);
+        expect(scope.supportActions).toEqual([
+            RESET_SCOPE_ACTION,
+            RESTORE_SCOPE_ACTION,
+            ACTION_NAME
+        ]);
     });
 
     it('reset', () => {
-        scope.reset();
-        expect(scope.state).toEqual(null);
+        expect(scope.reset()).toEqual(null);
+    });
+
+    it('restore', () => {
+        expect(scope.restore(1000)).toEqual(1000);
     });
 
 });

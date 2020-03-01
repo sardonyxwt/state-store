@@ -57,8 +57,8 @@ export declare type ScopeListenerUnsubscribeCallback = (() => boolean) & {
 export declare type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export declare type ScopeAction<T, PROPS> = (state: T, props?: PROPS) => T;
 export declare type ScopeMacro<T, PROPS, OUT> = (state: T, props?: PROPS) => OUT;
-export declare type ScopeActionResultTransformer<T, PROPS, TRANSFORMED_OUT> = (actionResult: T, props: PROPS) => TRANSFORMED_OUT;
-export declare type ScopeActionDispatcher<T, PROPS, OUT> = (props?: PROPS, emitEvent?: boolean) => OUT;
+export declare type ScopeActionResultTransformer<T, PROPS, OUT> = (actionResult: T, props: PROPS) => OUT;
+export declare type ScopeActionDispatcher<PROPS, OUT> = (props?: PROPS, emitEvent?: boolean) => OUT;
 export declare enum ScopeMacroType {
     GETTER = "GETTER",
     SETTER = "SETTER",
@@ -121,7 +121,7 @@ export interface Scope<T = any> {
      * @throws {Error} Will throw an error if the scope locked or action name exists in scope
      * when it is called.
      */
-    registerAction<PROPS, TRANSFORMED_OUT = T>(actionName: string, action: ScopeAction<T, PROPS>, transformer?: ScopeActionResultTransformer<T, PROPS, TRANSFORMED_OUT>): ScopeActionDispatcher<T, PROPS, TRANSFORMED_OUT>;
+    registerAction<PROPS, OUT = T>(actionName: string, action: ScopeAction<T, PROPS>, transformer?: ScopeActionResultTransformer<T, PROPS, OUT>): ScopeActionDispatcher<PROPS, OUT>;
     /**
      * @function registerMacro
      * @summary Registers a new macro in scope.
@@ -145,7 +145,7 @@ export interface Scope<T = any> {
      * @throws {Error} Will throw an error if the actionName not present in scope
      * or {isActionDispatchAvailable} is false.
      */
-    dispatch(actionName: string, props?: any, emitEvent?: boolean): T;
+    dispatch<PROPS = any>(actionName: string, props?: PROPS, emitEvent?: boolean): T;
     /**
      * @function subscribe
      * @summary Adds a scope change listener.
@@ -171,8 +171,18 @@ export interface Scope<T = any> {
     /**
      * @function reset
      * @summary Reset scope state.
+     * @param {boolean?} emitEvent You can specify emit event or not.
+     * @return {any extends T} Return new state.
      */
-    reset(): void;
+    reset(emitEvent?: boolean): T;
+    /**
+     * @function restore
+     * @summary Restore scope state.
+     * @param {any extends T} restoredState Restored state.
+     * @param {boolean?} emitEvent You can specify emit event or not.
+     * @return {any extends T} Return new state.
+     */
+    restore(restoredState: T, emitEvent?: boolean): T;
 }
 /**
  * @interface ScopeMiddleware
@@ -316,9 +326,19 @@ export interface Store {
     /**
      * @function reset
      * @summary Reset scopes state.
+     * @param {boolean?} emitEvent You can specify emit event or not.
      */
-    reset(): void;
+    reset(emitEvent?: boolean): void;
+    /**
+     * @function restore
+     * @summary Restore scopes state.
+     * @param {Map<string, any>} restoredStates Restored scopes states.
+     * @param {boolean?} emitEvent You can specify emit event or not.
+     */
+    restore(restoredStates: Map<string, any>, emitEvent?: boolean): void;
 }
+export declare const RESET_SCOPE_ACTION = "_reset";
+export declare const RESTORE_SCOPE_ACTION = "_restore";
 /**
  * @function isStoreExist
  * @summary Check is store exist.
@@ -344,7 +364,7 @@ export declare function getStore(storeName: string): Store;
 /**
  * @function getState
  * @summary Returns all store states.
- * @return {{string: {string: any}}} Scope states
+ * @return {{string: {[key: string]: any}}} Scope states
  */
 export declare function getState(): {};
 /**

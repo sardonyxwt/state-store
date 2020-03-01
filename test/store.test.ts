@@ -1,4 +1,4 @@
-import {createStore, isStoreExist, getStore, Scope, Store} from '../src';
+import {createStore, isStoreExist, getStore, Scope, Store, getState} from '../src';
 
 describe('Store', () => {
 
@@ -19,7 +19,14 @@ describe('Store', () => {
     });
 
     it('createScope', () => {
-        scope = store.createScope();
+        scope = store.createScope({
+            isImmutabilityEnabled: true,
+            isSubscribedMacroAutoCreateEnabled: true,
+        });
+    });
+
+    it('hasScope', () => {
+        expect(store.hasScope(scope.name));
     });
 
     it('state', () => {
@@ -42,6 +49,30 @@ describe('Store', () => {
     it('getScope', () => {
         const scopeName = scope.name;
         expect(store.getScope(scopeName).name).toEqual(scopeName);
+    });
+
+    it('reset', () => {
+        store.reset();
+        expect(store.state).toEqual({
+            [scope.name]: null
+        });
+    });
+
+    it('restore', () => {
+        store.restore(new Map([
+            [scope.name, 1000]
+        ]));
+        expect(store.state).toEqual({
+            [scope.name]: 1000
+        });
+    });
+
+    it('getState', () => {
+        expect(getState()).toEqual({
+            [store.name]: {
+                [scope.name]: scope.state
+            }
+        });
     });
 
 });
