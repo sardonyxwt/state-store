@@ -59,9 +59,9 @@ describe('Store', () => {
     });
 
     it('restore', () => {
-        store.restore(new Map([
-            [scope.name, 1000]
-        ]));
+        store.restore({
+            [scope.name]: 1000
+        });
         expect(store.state).toEqual({
             [scope.name]: 1000
         });

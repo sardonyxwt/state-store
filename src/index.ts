@@ -386,10 +386,10 @@ export interface Store {
     /**
      * @function restore
      * @summary Restore scopes state.
-     * @param {Map<string, any>} restoredStates Restored scopes states.
+     * @param {{string: any}} restoredStates Restored scopes states.
      * @param {boolean?} emitEvent You can specify emit event or not.
      */
-    restore(restoredStates: Map<string, any>, emitEvent?: boolean): void;
+    restore(restoredStates: {[scopeName: string]: any}, emitEvent?: boolean): void;
 
 }
 
@@ -778,14 +778,13 @@ class StoreImpl implements Store {
         this._scopes.forEach(scope => scope.reset(emitEvent));
     }
 
-    restore(states: Map<string, any>) {
-        states.forEach(
-            (restoredState, scopeName) => {
-                this.hasScope(scopeName)
-                    ? this.getScope(scopeName).restore(restoredState)
-                    : this._statesToRestore.set(scopeName, restoredState);
-            }
-        );
+    restore(restoredStates: {[scopeName: string]: any}, emitEvent?: boolean) {
+        Object.getOwnPropertyNames(restoredStates).forEach(restoredScopeName => {
+            const restoredState = restoredStates[restoredScopeName];
+            this.hasScope(restoredScopeName)
+                ? this.getScope(restoredScopeName).restore(restoredState, emitEvent)
+                : this._statesToRestore.set(restoredScopeName, restoredState);
+        });
     }
 
 }

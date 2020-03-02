@@ -1,6 +1,6 @@
 {
     "name": "@sardonyxwt/state-store",
-    "version": "5.6.0",
+    "version": "5.6.1",
     "description": "State store",
     "keywords": [
         "sclib",

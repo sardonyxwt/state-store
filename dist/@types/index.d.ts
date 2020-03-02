@@ -333,10 +333,12 @@ export interface Store {
     /**
      * @function restore
      * @summary Restore scopes state.
-     * @param {Map<string, any>} restoredStates Restored scopes states.
+     * @param {{string: any}} restoredStates Restored scopes states.
      * @param {boolean?} emitEvent You can specify emit event or not.
      */
-    restore(restoredStates: Map<string, any>, emitEvent?: boolean): void;
+    restore(restoredStates: {
+        [scopeName: string]: any;
+    }, emitEvent?: boolean): void;
 }
 export declare const RESET_SCOPE_ACTION = "_reset";
 export declare const RESTORE_SCOPE_ACTION = "_restore";
