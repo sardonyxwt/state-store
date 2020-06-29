@@ -1,5 +1,4 @@
-import {deepFreeze} from '@sardonyxwt/utils/object';
-import {createUniqueIdGenerator} from '@sardonyxwt/utils/generator';
+import {deepFreeze, createUniqueIdGenerator} from "@sardonyxwt/utils";
 
 /**
  * @type ScopeConfig

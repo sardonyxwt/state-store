@@ -1,7 +1,10 @@
 {
     "name": "@sardonyxwt/state-store",
-    "version": "5.6.1",
+    "version": "5.6.4",
     "description": "State store",
+    "main": "lib/store.cjs.js",
+    "module": "lib/store.esm.js",
+    "types": "lib/types",
     "keywords": [
         "sclib",
         "state",
@@ -16,37 +19,35 @@
         "LICENSE",
         "README.md",
         "CHANGELOG.md",
-        "dist/"
+        "lib/"
     ],
-    "main": "dist/state-store.min.js",
-    "typings": "dist/@types/index.d.ts",
     "repository": {
         "type": "git",
         "url": "https://github.com/sardonyxwt/state-store.git"
     },
     "scripts": {
-        "build": "cross-env NODE_ENV='production' webpack -p",
-        "test": "cross-env-shell webpack -p && jest",
-        "lint": "tslint -p . -c tslint.json --fix -t verbose",
-        "deploy": "cross-env-shell npm run build && npm publish --access public"
+        "build": "rollup -c rollup.config.ts",
+        "test": "jest",
+        "deploy": "npm run build && npm publish --access public"
     },
     "dependencies": {
-        "@sardonyxwt/utils": "3.3.1"
+        "@sardonyxwt/utils": "3.4.2"
     },
     "devDependencies": {
-        "@types/jest": "25.1.3",
-        "@types/node": "13.7.7",
-        "clean-webpack-plugin": "3.0.0",
-        "cross-env": "7.0.0",
-        "jest": "25.1.0",
-        "jest-html-reporter": "2.8.0",
-        "ts-jest": "25.2.1",
-        "ts-loader": "6.2.1",
-        "tsconfig-paths-jest": "0.0.1",
-        "tslint": "6.0.0",
-        "typescript": "3.8.3",
-        "webpack": "4.41.6",
-        "webpack-bundle-analyzer": "3.6.0",
-        "webpack-cli": "3.3.11"
+        "@rollup/plugin-commonjs": "13.0.0",
+        "@rollup/plugin-node-resolve": "8.1.0",
+        "@types/jest": "26.0.3",
+        "@types/node": "14.0.14",
+        "@types/rollup-plugin-size-snapshot": "^0.10.0",
+        "@types/rollup-plugin-visualizer": "^2.6.0",
+        "jest": "26.1.0",
+        "jest-html-reporter": "3.1.3",
+        "rollup": "2.18.1",
+        "rollup-plugin-cleaner": "^1.0.0",
+        "rollup-plugin-size-snapshot": "^0.12.0",
+        "rollup-plugin-typescript2": "0.27.1",
+        "rollup-plugin-visualizer": "^4.0.4",
+        "ts-jest": "26.1.1",
+        "typescript": "3.9.5"
     }
 }
