@@ -1,6 +1,6 @@
 {
     "name": "@sardonyxwt/state-store",
-    "version": "5.6.4",
+    "version": "5.6.5",
     "description": "State store",
     "main": "lib/store.cjs.js",
     "module": "lib/store.esm.js",
@@ -31,7 +31,7 @@
         "deploy": "npm run build && npm publish --access public"
     },
     "dependencies": {
-        "@sardonyxwt/utils": "3.4.2"
+        "@sardonyxwt/utils": "3.4.7"
     },
     "devDependencies": {
         "@rollup/plugin-commonjs": "13.0.0",
