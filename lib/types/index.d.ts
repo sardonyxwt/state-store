@@ -34,7 +34,7 @@ export declare type StoreConfig = {
     name: string;
     isFrozen?: boolean;
 };
-export declare type ScopeEvent<T = any> = {
+export declare type ScopeEvent<T = unknown> = {
     newState: T;
     oldState: T;
     scopeName: string;
@@ -44,7 +44,7 @@ export declare type ScopeEvent<T = any> = {
     parentEvent?: ScopeEvent<T>;
     childrenEvents?: ScopeEvent<T>[];
 };
-export declare type ScopeError<T = any> = {
+export declare type ScopeError<T = unknown> = {
     reason: any;
     oldState: T;
     scopeName: string;
@@ -68,7 +68,7 @@ export declare enum ScopeMacroType {
  * @interface Scope
  * @summary The whole state of your app is stored in an scopes.
  */
-export interface Scope<T = any> {
+export interface Scope<T = unknown> {
     /**
      * @var name.
      * @summary Scope name.
@@ -145,7 +145,7 @@ export interface Scope<T = any> {
      * @throws {Error} Will throw an error if the actionName not present in scope
      * or {isActionDispatchAvailable} is false.
      */
-    dispatch<PROPS = any>(actionName: string, props?: PROPS, emitEvent?: boolean): T;
+    dispatch<PROPS = unknown>(actionName: string, props?: PROPS, emitEvent?: boolean): T;
     /**
      * @function subscribe
      * @summary Adds a scope change listener.
@@ -293,9 +293,7 @@ export interface Store {
      * @var state
      * @summary Store state.
      */
-    readonly state: {
-        [scopeName: string]: any;
-    };
+    readonly state: Record<string, unknown>;
     /**
      * @function createScope
      * @summary Create a new scope and return it.
@@ -304,14 +302,14 @@ export interface Store {
      * @return {Scope} Scope.
      * @throws {Error} Will throw an error if name of scope not unique.
      */
-    createScope<T = any>(config?: ScopeConfig<T>, useRestoredStateIfAvailable?: boolean): Scope<T>;
+    createScope<T = unknown>(config?: ScopeConfig<T>, useRestoredStateIfAvailable?: boolean): Scope<T>;
     /**
      * @function getScope
      * @summary Returns scope.
      * @param {string} scopeName Name scope, to get the Scope.
      * @return {Scope} Scope or null
      */
-    getScope<T = any>(scopeName: string): Scope<T>;
+    getScope<T = unknown>(scopeName: string): Scope<T>;
     /**
      * @function hasScope
      * @summary Returns a boolean indicating whether an Scope with the specified name exists or not in Store.
@@ -336,9 +334,7 @@ export interface Store {
      * @param {{string: any}} restoredStates Restored scopes states.
      * @param {boolean?} emitEvent You can specify emit event or not.
      */
-    restore(restoredStates: {
-        [scopeName: string]: any;
-    }, emitEvent?: boolean): void;
+    restore(restoredStates: Record<string, unknown>, emitEvent?: boolean): void;
 }
 export declare const RESET_SCOPE_ACTION = "_reset";
 export declare const RESTORE_SCOPE_ACTION = "_restore";
@@ -369,7 +365,7 @@ export declare function getStore(storeName: string): Store;
  * @summary Returns all store states.
  * @return {{string: {[key: string]: any}}} Scope states
  */
-export declare function getState(): {};
+export declare function getState(): Record<string, unknown>;
 /**
  * @function setStoreDevTool
  * @summary Set store dev tool.

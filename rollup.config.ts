@@ -1,36 +1,42 @@
-import pkg from "./package.json";
-import commonjs from "@rollup/plugin-commonjs";
-import resolve from "@rollup/plugin-node-resolve";
-import typescript from "rollup-plugin-typescript2";
-import visualizer from "rollup-plugin-visualizer";
+import pkg from './package.json';
+import commonjs from '@rollup/plugin-commonjs';
+import resolve from '@rollup/plugin-node-resolve';
+import typescript from 'rollup-plugin-typescript2';
+import visualizer from 'rollup-plugin-visualizer';
 import cleaner from 'rollup-plugin-cleaner';
+import { terser } from 'rollup-plugin-terser';
 
 export default {
-    input: "src/index.ts",
+    input: 'src/index.ts',
     output: [
         {
             file: pkg.main,
-            format: "cjs",
+            format: 'cjs',
         },
         {
             file: pkg.module,
-            format: "es",
+            format: 'es',
         },
     ],
+    external: ['react', 'react-dom', 'styled-components'],
     plugins: [
-        resolve(),
         commonjs(),
+        resolve(),
         typescript({
-            tsconfig: "tsconfig.rollup.json",
+            tsconfig: 'tsconfig.rollup.json',
+            typescript: require('ttypescript'),
             useTsconfigDeclarationDir: true,
         }),
+        terser({
+            output: {
+                comments: false,
+            },
+        }),
         cleaner({
-            targets: [
-                './lib/'
-            ]
+            targets: ['./lib/'],
         }),
         visualizer({
-            filename: "report/stats.html",
+            filename: 'report/stats.html',
         }),
     ],
 };

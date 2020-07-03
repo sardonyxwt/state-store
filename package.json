@@ -1,6 +1,6 @@
 {
     "name": "@sardonyxwt/state-store",
-    "version": "5.6.5",
+    "version": "5.7.0",
     "description": "State store",
     "main": "lib/store.cjs.js",
     "module": "lib/store.esm.js",
@@ -27,25 +27,45 @@
     },
     "scripts": {
         "build": "rollup -c rollup.config.ts",
+        "watch": "rollup -c rollup.config.ts -w",
         "test": "jest",
-        "deploy": "npm run build && npm publish --access public"
+        "test:update": "jest --updateSnapshot",
+        "lint": "eslint --ignore-path .gitignore .",
+        "lint:fix": "eslint --ignore-path .gitignore . --fix",
+        "deploy": "npm run lint && npm run build && npm publish --access public"
     },
     "dependencies": {
-        "@sardonyxwt/utils": "3.4.7"
+        "@sardonyxwt/utils": "^3.5.0"
     },
     "devDependencies": {
-        "@rollup/plugin-commonjs": "13.0.0",
-        "@rollup/plugin-node-resolve": "8.1.0",
+        "@rollup/plugin-commonjs": "^13.0.0",
+        "@rollup/plugin-node-resolve": "^8.1.0",
         "@types/jest": "26.0.3",
         "@types/node": "14.0.14",
         "@types/rollup-plugin-visualizer": "2.6.0",
+        "@typescript-eslint/eslint-plugin": "3.5.0",
+        "@typescript-eslint/parser": "3.5.0",
+        "eslint": "7.3.1",
+        "eslint-config-prettier": "6.11.0",
+        "eslint-plugin-prettier": "3.1.4",
+        "eslint-plugin-react": "7.20.3",
         "jest": "26.1.0",
         "jest-html-reporter": "3.1.3",
-        "rollup": "2.18.1",
+        "jest-styled-components": "7.0.2",
+        "jest-transform-stub": "2.0.0",
+        "prettier": "2.0.5",
+        "rollup": "2.18.2",
         "rollup-plugin-cleaner": "1.0.0",
+        "rollup-plugin-terser": "6.1.0",
+        "rollup-plugin-ts-paths": "1.0.5",
         "rollup-plugin-typescript2": "0.27.1",
         "rollup-plugin-visualizer": "4.0.4",
         "ts-jest": "26.1.1",
-        "typescript": "3.9.5"
+        "ts-node": "8.10.2",
+        "tsconfig-paths-jest": "0.0.1",
+        "tslib": "2.0.0",
+        "ttypescript": "1.5.10",
+        "typescript": "3.9.6",
+        "typescript-transform-paths": "1.1.14"
     }
 }

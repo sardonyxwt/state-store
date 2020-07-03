@@ -1,23 +1,36 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+const pkg = require('./package.json');
+const tsconfig = require('./tsconfig.json');
+const tsconfigPaths = require('tsconfig-paths-jest');
+
 module.exports = {
-    testURL: 'http://localhost',
-    moduleFileExtensions: ['js', 'ts'],
+    moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
     transform: {
-        '^.+\\.ts$': 'ts-jest'
+        '^.+\\.(ts|tsx)$': 'ts-jest',
+        '^.+\\.(css|styl|less|sass|scss|png|jpg|ttf)$': 'jest-transform-stub',
     },
-    testRegex: '/test/.*\\.test\\.ts$',
+    setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+    moduleNameMapper: {
+        ...(tsconfig.compilerOptions.paths ? tsconfigPaths(tsconfig) : {}),
+    },
     reporters: [
         'default',
-        ['./node_modules/jest-html-reporter', {
-            pageTitle: 'StateStore Test Report',
-            outputPath: './report/test-report.html',
-            includeFailureMsg: true,
-            includeConsoleLog: true
-        }]
+        [
+            './node_modules/jest-html-reporter',
+            {
+                pageTitle: `${pkg.name}-${pkg.version}`,
+                outputPath: './report/test-report.html',
+                includeFailureMsg: true,
+                includeConsoleLog: true,
+            },
+        ],
     ],
     collectCoverage: true,
     coverageDirectory: './report/coverage',
     collectCoverageFrom: [
-        'src/index.ts',
-        '!<rootDir>/node_modules/'
-    ]
+        'src/app/**/*.{ts,tsx,js,jsx}',
+        'src/shared/**/*.{ts,tsx,js,jsx}',
+        '!<rootDir>/node_modules/',
+        '!<rootDir>/src/**/*.constant.ts',
+    ],
 };

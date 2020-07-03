@@ -1,12 +1,18 @@
-import {createStore, isStoreExist, getStore, Scope, Store, getState} from '../src';
+import {
+    createStore,
+    isStoreExist,
+    getStore,
+    Scope,
+    Store,
+    getState,
+} from '@source';
 
 describe('Store', () => {
-
     let store: Store;
     let scope: Scope;
 
     it('createStore', () => {
-        store = createStore({name: 'TestStore'});
+        store = createStore({ name: 'TestStore' });
     });
 
     it('isStoreExist', () => {
@@ -30,7 +36,7 @@ describe('Store', () => {
     });
 
     it('state', () => {
-        expect(store.state).toEqual({[scope.name]: null});
+        expect(store.state).toEqual({ [scope.name]: null });
     });
 
     it('lock', () => {
@@ -54,25 +60,24 @@ describe('Store', () => {
     it('reset', () => {
         store.reset();
         expect(store.state).toEqual({
-            [scope.name]: null
+            [scope.name]: null,
         });
     });
 
     it('restore', () => {
         store.restore({
-            [scope.name]: 1000
+            [scope.name]: 1000,
         });
         expect(store.state).toEqual({
-            [scope.name]: 1000
+            [scope.name]: 1000,
         });
     });
 
     it('getState', () => {
         expect(getState()).toEqual({
             [store.name]: {
-                [scope.name]: scope.state
-            }
+                [scope.name]: scope.state,
+            },
         });
     });
-
 });

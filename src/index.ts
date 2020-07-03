@@ -1,4 +1,4 @@
-import {deepFreeze, createUniqueIdGenerator} from "@sardonyxwt/utils";
+import { deepFreeze, createUniqueIdGenerator } from '@sardonyxwt/utils';
 
 /**
  * @type ScopeConfig
@@ -36,7 +36,7 @@ export type StoreConfig = {
     name: string;
     isFrozen?: boolean;
 };
-export type ScopeEvent<T = any> = {
+export type ScopeEvent<T = unknown> = {
     newState: T;
     oldState: T;
     scopeName: string;
@@ -46,19 +46,27 @@ export type ScopeEvent<T = any> = {
     parentEvent?: ScopeEvent<T>;
     childrenEvents?: ScopeEvent<T>[];
 };
-export type ScopeError<T = any> = {
+export type ScopeError<T = unknown> = {
     reason;
     oldState: T;
     scopeName: string;
     actionName: string;
     props;
 };
-export type ScopeListenerUnsubscribeCallback = (() => boolean) & { listenerId: string };
+export type ScopeListenerUnsubscribeCallback = (() => boolean) & {
+    listenerId: string;
+};
 export type ScopeListener<T> = (event: ScopeEvent<T>) => void;
 export type ScopeAction<T, PROPS> = (state: T, props?: PROPS) => T;
 export type ScopeMacro<T, PROPS, OUT> = (state: T, props?: PROPS) => OUT;
-export type ScopeActionResultTransformer<T, PROPS, OUT> = (actionResult: T, props: PROPS) => OUT;
-export type ScopeActionDispatcher<PROPS, OUT> = (props?: PROPS, emitEvent?: boolean) => OUT;
+export type ScopeActionResultTransformer<T, PROPS, OUT> = (
+    actionResult: T,
+    props: PROPS,
+) => OUT;
+export type ScopeActionDispatcher<PROPS, OUT> = (
+    props?: PROPS,
+    emitEvent?: boolean,
+) => OUT;
 
 export enum ScopeMacroType {
     GETTER = 'GETTER',
@@ -70,8 +78,7 @@ export enum ScopeMacroType {
  * @interface Scope
  * @summary The whole state of your app is stored in an scopes.
  */
-export interface Scope<T = any> {
-
+export interface Scope<T = unknown> {
     /**
      * @var name.
      * @summary Scope name.
@@ -135,7 +142,7 @@ export interface Scope<T = any> {
     registerAction<PROPS, OUT = T>(
         actionName: string,
         action: ScopeAction<T, PROPS>,
-        transformer?: ScopeActionResultTransformer<T, PROPS, OUT>
+        transformer?: ScopeActionResultTransformer<T, PROPS, OUT>,
     ): ScopeActionDispatcher<PROPS, OUT>;
 
     /**
@@ -150,7 +157,7 @@ export interface Scope<T = any> {
     registerMacro<PROPS, OUT>(
         macroName: string,
         macro: ScopeMacro<T, PROPS, OUT>,
-        macroType?: ScopeMacroType
+        macroType?: ScopeMacroType,
     );
 
     /**
@@ -166,7 +173,11 @@ export interface Scope<T = any> {
      * @throws {Error} Will throw an error if the actionName not present in scope
      * or {isActionDispatchAvailable} is false.
      */
-    dispatch<PROPS = any>(actionName: string, props?: PROPS, emitEvent?: boolean): T;
+    dispatch<PROPS = unknown>(
+        actionName: string,
+        props?: PROPS,
+        emitEvent?: boolean,
+    ): T;
 
     /**
      * @function subscribe
@@ -177,7 +188,10 @@ export interface Scope<T = any> {
      * @return {ScopeListenerUnsubscribeCallback} A listener unsubscribe callback to remove this change listener later.
      * @throws {Error} Will throw an error if actionName not present in scope.
      */
-    subscribe(listener: ScopeListener<T>, actionNames?: string[]): ScopeListenerUnsubscribeCallback;
+    subscribe(
+        listener: ScopeListener<T>,
+        actionNames?: string[],
+    ): ScopeListenerUnsubscribeCallback;
 
     /**
      * @function unsubscribe
@@ -209,7 +223,6 @@ export interface Scope<T = any> {
      * @return {any extends T} Return new state.
      */
     restore(restoredState: T, emitEvent?: boolean): T;
-
 }
 
 /**
@@ -217,7 +230,6 @@ export interface Scope<T = any> {
  * @summary You can use middleware to use aspect programing.
  */
 export interface ScopeMiddleware<T> {
-
     /**
      * @function postSetup
      * @param {Scope} scope Created scope.
@@ -232,19 +244,20 @@ export interface ScopeMiddleware<T> {
      * @param {ScopeAction} action Wrapped action.
      * @return {ScopeAction} Action that wrapped old action
      */
-    appendActionMiddleware<PROPS>(action: ScopeAction<T, PROPS>): ScopeAction<T, PROPS>;
-
+    appendActionMiddleware<PROPS>(
+        action: ScopeAction<T, PROPS>,
+    ): ScopeAction<T, PROPS>;
 }
 
 export enum ScopeChangeEventType {
     REGISTER_MACRO = 'REGISTER_MACRO',
     REGISTER_ACTION = 'REGISTER_ACTION',
-    LOCK = 'LOCK'
+    LOCK = 'LOCK',
 }
 
 export enum StoreChangeEventType {
     CREATE_SCOPE = 'CREATE_SCOPE',
-    LOCK = 'LOCK'
+    LOCK = 'LOCK',
 }
 
 export interface ScopeChangeDetails {
@@ -264,7 +277,6 @@ export interface StoreChangeDetails {
  * @summary You can use StoreDevTool to handle all action in store.
  */
 export interface StoreDevTool {
-
     /**
      * @function onCreateStore
      * @summary Call when created new store.
@@ -315,7 +327,6 @@ export interface StoreDevTool {
      * @param {ScopeError} error ActionListener error.
      */
     onActionListenerError(error: ScopeError): void;
-
 }
 
 /**
@@ -323,7 +334,6 @@ export interface StoreDevTool {
  * @summary The whole state of your app is stored in an scopes inside a store.
  */
 export interface Store {
-
     /**
      * @var name.
      * @summary Store name.
@@ -341,7 +351,7 @@ export interface Store {
      * @var state
      * @summary Store state.
      */
-    readonly state: { [scopeName: string]: any };
+    readonly state: Record<string, unknown>;
 
     /**
      * @function createScope
@@ -351,7 +361,10 @@ export interface Store {
      * @return {Scope} Scope.
      * @throws {Error} Will throw an error if name of scope not unique.
      */
-    createScope<T = any>(config?: ScopeConfig<T>, useRestoredStateIfAvailable?: boolean): Scope<T>;
+    createScope<T = unknown>(
+        config?: ScopeConfig<T>,
+        useRestoredStateIfAvailable?: boolean,
+    ): Scope<T>;
 
     /**
      * @function getScope
@@ -359,7 +372,7 @@ export interface Store {
      * @param {string} scopeName Name scope, to get the Scope.
      * @return {Scope} Scope or null
      */
-    getScope<T = any>(scopeName: string): Scope<T>;
+    getScope<T = unknown>(scopeName: string): Scope<T>;
 
     /**
      * @function hasScope
@@ -388,8 +401,7 @@ export interface Store {
      * @param {{string: any}} restoredStates Restored scopes states.
      * @param {boolean?} emitEvent You can specify emit event or not.
      */
-    restore(restoredStates: {[scopeName: string]: any}, emitEvent?: boolean): void;
-
+    restore(restoredStates: Record<string, unknown>, emitEvent?: boolean): void;
 }
 
 const stores = new Map<string, Store>();
@@ -401,14 +413,13 @@ const storeDevTool: StoreDevTool = {
     onChangeScope: () => null,
     onAction: () => null,
     onActionError: () => null,
-    onActionListenerError: () => null
+    onActionListenerError: () => null,
 };
 
 export const RESET_SCOPE_ACTION = '_reset';
 export const RESTORE_SCOPE_ACTION = '_restore';
 
 class ScopeImpl<T> implements Scope<T> {
-
     public readonly store: Store;
     public readonly name: string;
     public readonly isImmutabilityEnabled: boolean;
@@ -419,15 +430,24 @@ class ScopeImpl<T> implements Scope<T> {
     private _isFrozen: boolean;
     private _context: T = null;
     private _contextEvent: ScopeEvent<T> = null;
-    private _isActionInProgress: boolean = false;
+    private _isActionInProgress = false;
 
     private _middleware: ScopeMiddleware<T>[];
-    private _actions = new Map<string, ScopeAction<T, any>>();
+    private _actions = new Map<string, ScopeAction<T, unknown>>();
     private _listeners = new Map<string, ScopeListener<T>>();
-    private readonly _listenerIdGenerator = createUniqueIdGenerator('ScopeListener');
+    private readonly _listenerIdGenerator = createUniqueIdGenerator(
+        'ScopeListener',
+    );
 
     constructor(store: Store, config: ScopeConfig<T>) {
-        const {name, initState, middleware, isImmutabilityEnabled, isSubscribedMacroAutoCreateEnabled, isFrozen} = config;
+        const {
+            name,
+            initState,
+            middleware,
+            isImmutabilityEnabled,
+            isSubscribedMacroAutoCreateEnabled,
+            isFrozen,
+        } = config;
         this.store = store;
         this.name = name;
         this.isImmutabilityEnabled = isImmutabilityEnabled;
@@ -455,34 +475,45 @@ class ScopeImpl<T> implements Scope<T> {
         return !this._isActionInProgress;
     }
 
-    get state() {
+    get state(): T {
         return this._state;
     }
 
-    get context() {
+    get context(): T {
         return this._context;
     }
 
-    get supportActions() {
+    get supportActions(): string[] {
         return Array.from(this._actions.keys());
     }
 
     registerAction<PROPS, OUT = T>(
         actionName: string,
         action: ScopeAction<T, PROPS>,
-        transformer?: ScopeActionResultTransformer<T, PROPS, OUT>
+        transformer?: ScopeActionResultTransformer<T, PROPS, OUT>,
     ): ScopeActionDispatcher<PROPS, OUT> {
         if (this._isFrozen) {
             throw new Error(`This scope is locked you can't add new action.`);
         }
-        if (this._actions.has(actionName) || (this.isSubscribedMacroAutoCreateEnabled && actionName in this)) {
-            throw new Error(`Action name ${actionName} is duplicate or reserved in scope ${this.name}.`);
+        if (
+            this._actions.has(actionName) ||
+            (this.isSubscribedMacroAutoCreateEnabled && actionName in this)
+        ) {
+            throw new Error(
+                `Action name ${actionName} is duplicate or reserved in scope ${this.name}.`,
+            );
         }
         this._actions.set(actionName, action);
 
         const actionDispatcher = (props?: PROPS, emitEvent?: boolean): OUT => {
-            const dispatchResult = this.dispatch<PROPS>(actionName, props, emitEvent);
-            return transformer ? transformer(dispatchResult, props) : dispatchResult as unknown as OUT;
+            const dispatchResult = this.dispatch<PROPS>(
+                actionName,
+                props,
+                emitEvent,
+            );
+            return transformer
+                ? transformer(dispatchResult, props)
+                : ((dispatchResult as unknown) as OUT);
         };
 
         if (this.isSubscribedMacroAutoCreateEnabled) {
@@ -492,14 +523,20 @@ class ScopeImpl<T> implements Scope<T> {
 
             const subscriberMacroName = `on${capitalizeFirstLetterActionName()}`;
 
-            this.registerMacro(subscriberMacroName, (state, listener: ScopeListener<T>) => {
-                return this.subscribe(listener, [actionName]);
-            });
+            this.registerMacro(
+                subscriberMacroName,
+                (state, listener: ScopeListener<T>) => {
+                    return this.subscribe(listener, [actionName]);
+                },
+            );
         }
 
         this[actionName] = actionDispatcher;
 
-        storeDevTool.onChangeScope(this, {type: ScopeChangeEventType.REGISTER_ACTION, actionName});
+        storeDevTool.onChangeScope(this, {
+            type: ScopeChangeEventType.REGISTER_ACTION,
+            actionName,
+        });
 
         return actionDispatcher;
     }
@@ -507,7 +544,7 @@ class ScopeImpl<T> implements Scope<T> {
     registerMacro<IN, OUT>(
         macroName: string,
         macro: ScopeMacro<T, IN, OUT>,
-        macroType: ScopeMacroType = ScopeMacroType.FUNCTION
+        macroType: ScopeMacroType = ScopeMacroType.FUNCTION,
     ) {
         if (!macro) {
             throw new Error(`Macro cannot be null or undefined.`);
@@ -516,14 +553,21 @@ class ScopeImpl<T> implements Scope<T> {
             throw new Error(`This scope is locked you can't add new macro.`);
         }
         const isMacroExist = macroName in this;
-        const isPresentMacroHasFunctionType = () => typeof this[macroName] === 'function';
+        const isPresentMacroHasFunctionType = () =>
+            typeof this[macroName] === 'function';
 
-        if (isMacroExist
-            && (isPresentMacroHasFunctionType()
-                || macroType === ScopeMacroType.FUNCTION
-                || (macroType === ScopeMacroType.GETTER && Object.getOwnPropertyDescriptor(this, macroName).get)
-                || (macroType === ScopeMacroType.SETTER && Object.getOwnPropertyDescriptor(this, macroName).set))) {
-            throw new Error(`Macro name ${macroName} is reserved in scope ${this.name}.`);
+        if (
+            isMacroExist &&
+            (isPresentMacroHasFunctionType() ||
+                macroType === ScopeMacroType.FUNCTION ||
+                (macroType === ScopeMacroType.GETTER &&
+                    Object.getOwnPropertyDescriptor(this, macroName).get) ||
+                (macroType === ScopeMacroType.SETTER &&
+                    Object.getOwnPropertyDescriptor(this, macroName).set))
+        ) {
+            throw new Error(
+                `Macro name ${macroName} is reserved in scope ${this.name}.`,
+            );
         }
         const macroFunc = (props?: IN) => {
             return macro(this._state, props);
@@ -533,33 +577,52 @@ class ScopeImpl<T> implements Scope<T> {
                 this[macroName] = macroFunc;
                 break;
             case ScopeMacroType.GETTER:
-                Object.defineProperty(this, macroName, {get: macroFunc, configurable: true, enumerable: true});
+                Object.defineProperty(this, macroName, {
+                    get: macroFunc,
+                    configurable: true,
+                    enumerable: true,
+                });
                 break;
             case ScopeMacroType.SETTER:
-                Object.defineProperty(this, macroName, {set: macroFunc, configurable: true, enumerable: true});
+                Object.defineProperty(this, macroName, {
+                    set: macroFunc,
+                    configurable: true,
+                    enumerable: true,
+                });
                 break;
         }
 
-        storeDevTool.onChangeScope(this, {type: ScopeChangeEventType.REGISTER_MACRO, macroName, macroType});
+        storeDevTool.onChangeScope(this, {
+            type: ScopeChangeEventType.REGISTER_MACRO,
+            macroName,
+            macroType,
+        });
     }
 
     dispatch<PROPS>(actionName: string, props?: PROPS, emitEvent = true): T {
-        let action: ScopeAction<T, any> = this._actions.get(actionName);
+        let action: ScopeAction<T, unknown> = this._actions.get(actionName);
 
         if (!action) {
             throw new Error(`This action not exists ${actionName}`);
         }
 
         if (this._isActionInProgress) {
-            throw new Error('Now action dispatch not available. Other action spreads.');
+            throw new Error(
+                'Now action dispatch not available. Other action spreads.',
+            );
         }
 
-        if (this.isImmutabilityEnabled && !!props && typeof props === 'object') {
-            deepFreeze(props);
+        if (
+            this.isImmutabilityEnabled &&
+            !!props &&
+            typeof props === 'object'
+        ) {
+            deepFreeze(props as Record<string, never>);
         }
 
         this._middleware.forEach(
-            middleware => action = middleware.appendActionMiddleware(action)
+            (middleware) =>
+                (action = middleware.appendActionMiddleware(action)),
         );
 
         const isRootAction = !this._isActionInProgress;
@@ -575,7 +638,7 @@ class ScopeImpl<T> implements Scope<T> {
             oldState,
             scopeName: this.name,
             actionName,
-            props
+            props,
         });
 
         const buildScopeEvent = (newState: T): ScopeEvent<T> => ({
@@ -586,11 +649,15 @@ class ScopeImpl<T> implements Scope<T> {
             parentEvent: this._contextEvent ?? null,
             scopeName: this.name,
             storeName: this.store.name,
-            childrenEvents: []
+            childrenEvents: [],
         });
 
-        const onFulfilled = newState => {
-            if (this.isImmutabilityEnabled && !!newState && typeof props === 'object') {
+        const onFulfilled = (newState) => {
+            if (
+                this.isImmutabilityEnabled &&
+                !!newState &&
+                typeof props === 'object'
+            ) {
                 deepFreeze(newState);
             }
 
@@ -598,17 +665,21 @@ class ScopeImpl<T> implements Scope<T> {
 
             if (emitEvent) {
                 isRootAction
-                    ? this._contextEvent = buildScopeEvent(newState)
-                    : this?._contextEvent.childrenEvents.push(buildScopeEvent(newState));
+                    ? (this._contextEvent = buildScopeEvent(newState))
+                    : this?._contextEvent.childrenEvents.push(
+                          buildScopeEvent(newState),
+                      );
             }
 
             const dispatchEvent = (event: ScopeEvent<T>) => {
                 storeDevTool.onAction(event);
-                this._listeners.forEach(listener => {
+                this._listeners.forEach((listener) => {
                     try {
                         listener?.(event);
                     } catch (reason) {
-                        storeDevTool.onActionListenerError(buildScopeError(reason));
+                        storeDevTool.onActionListenerError(
+                            buildScopeError(reason),
+                        );
                     }
                 });
             };
@@ -627,7 +698,7 @@ class ScopeImpl<T> implements Scope<T> {
             return newState;
         };
 
-        const onRejected = reason => {
+        const onRejected = (reason) => {
             const error = buildScopeError(reason);
             if (isRootAction) {
                 storeDevTool.onActionError(error);
@@ -642,8 +713,11 @@ class ScopeImpl<T> implements Scope<T> {
         }
     }
 
-    subscribe(listener: ScopeListener<T>, actionNames: string[] = []): ScopeListenerUnsubscribeCallback {
-        actionNames.forEach(actionName => {
+    subscribe(
+        listener: ScopeListener<T>,
+        actionNames: string[] = [],
+    ): ScopeListenerUnsubscribeCallback {
+        actionNames.forEach((actionName) => {
             if (!this._actions.has(actionName)) {
                 throw new Error(`Action (${actionName}) not present in scope.`);
             }
@@ -651,19 +725,25 @@ class ScopeImpl<T> implements Scope<T> {
 
         const listenerId = this._listenerIdGenerator();
 
-        const accurateListener = event => {
-            const isActionPresentInScope = actionNames.findIndex(
-                actionName => actionName === event.actionName
-            ) !== -1;
+        const accurateListener = (event) => {
+            const isActionPresentInScope =
+                actionNames.findIndex(
+                    (actionName) => actionName === event.actionName,
+                ) !== -1;
 
             if (isActionPresentInScope) {
                 listener(event);
             }
         };
 
-        this._listeners.set(listenerId, actionNames.length === 0 ? listener : accurateListener);
+        this._listeners.set(
+            listenerId,
+            actionNames.length === 0 ? listener : accurateListener,
+        );
 
-        return Object.assign(() => this.unsubscribe(listenerId), {listenerId});
+        return Object.assign(() => this.unsubscribe(listenerId), {
+            listenerId,
+        });
     }
 
     unsubscribe(id: string) {
@@ -673,7 +753,7 @@ class ScopeImpl<T> implements Scope<T> {
     lock() {
         this._isFrozen = true;
 
-        storeDevTool.onChangeScope(this, {type: ScopeChangeEventType.LOCK});
+        storeDevTool.onChangeScope(this, { type: ScopeChangeEventType.LOCK });
     }
 
     reset(emitEvent?: boolean): T {
@@ -683,15 +763,13 @@ class ScopeImpl<T> implements Scope<T> {
     restore(restoredState: T, emitEvent?: boolean): T {
         return this.dispatch(RESTORE_SCOPE_ACTION, restoredState, emitEvent);
     }
-
 }
 
 class StoreImpl implements Store {
-
     public readonly name: string;
 
     private readonly _scopes = new Map<string, Scope>();
-    private readonly _statesToRestore = new Map<string, any>();
+    private readonly _statesToRestore = new Map<string, unknown>();
     private readonly _scopeNameGenerator = createUniqueIdGenerator('Scope');
     private _isFrozen: boolean;
 
@@ -707,14 +785,17 @@ class StoreImpl implements Store {
     get state() {
         const state = {};
 
-        this._scopes.forEach(scope => {
+        this._scopes.forEach((scope) => {
             state[scope.name] = scope.state;
         });
 
         return state;
     }
 
-    createScope<T>(config: ScopeConfig<T> = {}, useRestoredStateIfAvailable?: boolean): Scope<T> {
+    createScope<T>(
+        config: ScopeConfig<T> = {},
+        useRestoredStateIfAvailable?: boolean,
+    ): Scope<T> {
         if (this._isFrozen) {
             throw new Error(`This Store is locked you can't add new scope.`);
         }
@@ -725,42 +806,46 @@ class StoreImpl implements Store {
             middleware = [],
             isImmutabilityEnabled = false,
             isSubscribedMacroAutoCreateEnabled = false,
-            isFrozen = false
+            isFrozen = false,
         } = config;
 
         if (this._scopes.has(name)) {
             throw new Error(`Scope name must unique`);
         }
 
-        const useRestoredState = useRestoredStateIfAvailable && this._statesToRestore.has(name);
+        const useRestoredState =
+            useRestoredStateIfAvailable && this._statesToRestore.has(name);
         const state = useRestoredState
-            ? this._statesToRestore.get(name)
+            ? (this._statesToRestore.get(name) as T)
             : initState;
         if (useRestoredState) {
             this._statesToRestore.delete(name);
         }
 
-        let scope = new ScopeImpl<T>(this, {
+        const scope = new ScopeImpl<T>(this, {
             name,
             initState: state,
             middleware: middleware as ScopeMiddleware<T>[],
             isImmutabilityEnabled,
             isSubscribedMacroAutoCreateEnabled,
-            isFrozen
+            isFrozen,
         });
 
         this._scopes.set(name, scope);
 
-        middleware.forEach(middleware => middleware.postSetup(scope));
+        middleware.forEach((middleware) => middleware.postSetup(scope));
 
         storeDevTool.onCreateScope(scope);
-        storeDevTool.onChangeStore(this, {type: StoreChangeEventType.CREATE_SCOPE, scopeName: name});
+        storeDevTool.onChangeStore(this, {
+            type: StoreChangeEventType.CREATE_SCOPE,
+            scopeName: name,
+        });
 
         return scope;
     }
 
-    getScope<T = {}>(scopeName: string): Scope<T> {
-        return this._scopes.get(scopeName);
+    getScope<T>(scopeName: string): Scope<T> {
+        return this._scopes.get(scopeName) as Scope<T>;
     }
 
     hasScope(scopeName: string): boolean {
@@ -769,23 +854,30 @@ class StoreImpl implements Store {
 
     lock() {
         this._isFrozen = true;
-        this._scopes.forEach(it => it.lock());
-        storeDevTool.onChangeStore(this, {type: StoreChangeEventType.LOCK});
+        this._scopes.forEach((it) => it.lock());
+        storeDevTool.onChangeStore(this, { type: StoreChangeEventType.LOCK });
     }
 
     reset(emitEvent?: boolean) {
-        this._scopes.forEach(scope => scope.reset(emitEvent));
+        this._scopes.forEach((scope) => scope.reset(emitEvent));
     }
 
-    restore(restoredStates: {[scopeName: string]: any}, emitEvent?: boolean) {
-        Object.getOwnPropertyNames(restoredStates).forEach(restoredScopeName => {
-            const restoredState = restoredStates[restoredScopeName];
-            this.hasScope(restoredScopeName)
-                ? this.getScope(restoredScopeName).restore(restoredState, emitEvent)
-                : this._statesToRestore.set(restoredScopeName, restoredState);
-        });
+    restore(restoredStates: Record<string, unknown>, emitEvent?: boolean) {
+        Object.getOwnPropertyNames(restoredStates).forEach(
+            (restoredScopeName) => {
+                const restoredState = restoredStates[restoredScopeName];
+                this.hasScope(restoredScopeName)
+                    ? this.getScope(restoredScopeName).restore(
+                          restoredState,
+                          emitEvent,
+                      )
+                    : this._statesToRestore.set(
+                          restoredScopeName,
+                          restoredState,
+                      );
+            },
+        );
     }
-
 }
 
 /**
@@ -794,7 +886,7 @@ class StoreImpl implements Store {
  * @param {string} storeName Name of store.
  * @return {boolean} Status of store exist.
  */
-export function isStoreExist(storeName: string) {
+export function isStoreExist(storeName: string): boolean {
     return stores.has(storeName);
 }
 
@@ -806,13 +898,13 @@ export function isStoreExist(storeName: string) {
  * @throws {Error} Will throw an error if name of store not unique.
  */
 export function createStore(config: StoreConfig): Store {
-    const {name, isFrozen = false} = config;
+    const { name, isFrozen = false } = config;
 
     if (isStoreExist(name)) {
         throw new Error('Store name must unique');
     }
 
-    const store = new StoreImpl({name, isFrozen});
+    const store = new StoreImpl({ name, isFrozen });
     stores.set(name, store);
     storeDevTool.onCreateStore(store);
 
@@ -834,10 +926,10 @@ export function getStore(storeName: string): Store {
  * @summary Returns all store states.
  * @return {{string: {[key: string]: any}}} Scope states
  */
-export function getState() {
+export function getState(): Record<string, unknown> {
     const state = {};
 
-    stores.forEach(store => {
+    stores.forEach((store) => {
         state[store.name] = store.state;
     });
 
@@ -849,6 +941,6 @@ export function getState() {
  * @summary Set store dev tool.
  * @param {StoreDevTool} devTool Dev tool middleware, to handle store changes.
  */
-export function setStoreDevTool(devTool: Partial<StoreDevTool>) {
+export function setStoreDevTool(devTool: Partial<StoreDevTool>): void {
     Object.assign(storeDevTool, devTool);
 }

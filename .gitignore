@@ -5,6 +5,7 @@
 
 **/npm-debug.log
 report/
+lib/
 etc/
 node/
 node_modules/

@@ -1,9 +1,14 @@
-import {createStore, RESET_SCOPE_ACTION, RESTORE_SCOPE_ACTION, Scope, ScopeMacroType} from '../src';
+import {
+    createStore,
+    RESET_SCOPE_ACTION,
+    RESTORE_SCOPE_ACTION,
+    Scope,
+    ScopeMacroType,
+} from '@source';
 
 describe('Scope', () => {
-
-    let store = createStore({name: 'TestStore'});
-    let scope: Scope<number> = store.createScope();
+    const store = createStore({ name: 'TestStore' });
+    const scope: Scope<number> = store.createScope();
 
     let listenerId;
     const ACTION_NAME = 'action';
@@ -17,14 +22,18 @@ describe('Scope', () => {
     });
 
     it('registerMacro', () => {
-        scope.registerMacro(MACRO_NAME, (state, props: number) => {
-            return state + props;
-        }, ScopeMacroType.FUNCTION);
+        scope.registerMacro(
+            MACRO_NAME,
+            (state, props: number) => {
+                return state + props;
+            },
+            ScopeMacroType.FUNCTION,
+        );
     });
 
     it('registerTransformer', () => {
-        scope.registerMacro('sum', (state, props) => {
-            return props as any + state as any;
+        scope.registerMacro('sum', (state, props: number) => {
+            return props + state;
         });
         expect(scope['sum'](2000)).toEqual(2000);
     });
@@ -43,9 +52,12 @@ describe('Scope', () => {
     });
 
     it('subscribe', () => {
-        listenerId = scope.subscribe(({newState}) => {
-            expect(newState).toEqual(TEST_VALUE);
-        }, [ACTION_NAME]).listenerId;
+        listenerId = scope.subscribe(
+            ({ newState }) => {
+                expect(newState).toEqual(TEST_VALUE);
+            },
+            [ACTION_NAME],
+        ).listenerId;
     });
 
     it('dispatch', () => {
@@ -53,8 +65,12 @@ describe('Scope', () => {
         expect(newScope).toEqual(TEST_VALUE);
     });
 
-    it("testMacro", () => {
-        expect((scope as typeof scope & {plus: (value: number) => number}).plus(1000)).toEqual(2000);
+    it('testMacro', () => {
+        expect(
+            (scope as typeof scope & { plus: (value: number) => number }).plus(
+                1000,
+            ),
+        ).toEqual(2000);
     });
 
     it('unsubscribe', () => {
@@ -69,7 +85,7 @@ describe('Scope', () => {
         expect(scope.supportActions).toEqual([
             RESET_SCOPE_ACTION,
             RESTORE_SCOPE_ACTION,
-            ACTION_NAME
+            ACTION_NAME,
         ]);
     });
 
@@ -80,5 +96,4 @@ describe('Scope', () => {
     it('restore', () => {
         expect(scope.restore(1000)).toEqual(1000);
     });
-
 });
